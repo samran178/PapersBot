@@ -12,6 +12,10 @@ export default function CreateExamPage() {
   const [description, setDescription] = useState("");
   const [durationMinutes, setDurationMinutes] = useState(30);
   const [aiInput, setAiInput] = useState("");
+  const [aiFile, setAiFile] = useState<File | null>(null);
+  const [difficulty, setDifficulty] = useState("medium");
+  const [shortCount, setShortCount] = useState(5);
+  const [longCount, setLongCount] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
   const [questions, setQuestions] = useState([
     { text: "", options: ["", "", "", ""], correctAnswer: "" }
@@ -23,14 +27,20 @@ export default function CreateExamPage() {
   const { toast } = useToast();
 
   const handleGenerate = async () => {
-    if (!aiInput) {
-      toast({ variant: "destructive", title: "Please provide some text or material" });
+    if (!aiInput && !aiFile) {
+      toast({ variant: "destructive", title: "Please provide text or upload a PDF" });
       return;
     }
 
     setIsGenerating(true);
     try {
-      const result = await generateMutation.mutateAsync(aiInput);
+      const result = await generateMutation.mutateAsync({
+        text: aiInput,
+        file: aiFile || undefined,
+        difficulty,
+        shortQuestions: shortCount,
+        longQuestions: longCount
+      });
       setTitle(result.title);
       setQuestions(result.questions);
       toast({ title: "Exam generated successfully!" });
@@ -111,17 +121,75 @@ export default function CreateExamPage() {
               Paste your study material, lecture notes, or any text below and AI will automatically create the title and questions for you.
             </p>
             <div className="space-y-4">
-              <textarea 
-                value={aiInput} 
-                onChange={e => setAiInput(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-background border border-input text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all min-h-[120px] resize-y"
-                placeholder="Paste material here (e.g. Newton's laws of motion, historical events, etc.)..."
-              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Reference Text</label>
+                  <textarea 
+                    value={aiInput} 
+                    onChange={e => setAiInput(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl bg-background border border-input text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all min-h-[120px] resize-y"
+                    placeholder="Paste material here..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Upload PDF (Reference Material)</label>
+                  <div className="border-2 border-dashed border-input rounded-xl p-8 text-center hover:bg-secondary/20 transition-colors cursor-pointer relative">
+                    <input 
+                      type="file" 
+                      accept=".pdf"
+                      onChange={e => setAiFile(e.target.files?.[0] || null)}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                    <FileText className="w-10 h-10 mx-auto text-muted-foreground mb-2" />
+                    <p className="text-sm font-medium">{aiFile ? aiFile.name : "Click or drag PDF here"}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Supported: PDF (Max 50MB)</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 bg-secondary/30 rounded-xl">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Difficulty</label>
+                  <select 
+                    value={difficulty}
+                    onChange={e => setDifficulty(e.target.value)}
+                    className="w-full bg-background border border-input rounded-lg px-3 py-2 text-sm"
+                  >
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                    <option value="complex">Complex</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">MCQs (Short)</label>
+                  <input 
+                    type="number"
+                    min="0"
+                    max="20"
+                    value={shortCount}
+                    onChange={e => setShortCount(parseInt(e.target.value) || 0)}
+                    className="w-full bg-background border border-input rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Detailed (Long)</label>
+                  <input 
+                    type="number"
+                    min="0"
+                    max="10"
+                    value={longCount}
+                    onChange={e => setLongCount(parseInt(e.target.value) || 0)}
+                    className="w-full bg-background border border-input rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+              </div>
+
               <Button 
                 type="button" 
                 onClick={handleGenerate}
                 disabled={isGenerating}
-                className="w-full sm:w-auto"
+                className="w-full shadow-lg shadow-primary/20"
               >
                 {isGenerating ? (
                   <>

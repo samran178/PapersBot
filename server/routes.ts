@@ -6,7 +6,12 @@ import { z } from "zod";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import { generateExamQuestions } from "./openai";
+import multer from "multer";
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+const pdf = require("pdf-parse");
 
+const upload = multer({ storage: multer.memoryStorage() });
 const MemoryStore = createMemoryStore(session);
 
 declare module 'express-session' {
@@ -132,12 +137,31 @@ export async function registerRoutes(
     }
   });
 
-  app.post(api.exams.generate.path, requireAuth, async (req, res) => {
+  app.post(api.exams.generate.path, requireAuth, upload.single('file'), async (req, res) => {
     try {
-      const { text } = api.exams.generate.input.parse(req.body);
-      const generated = await generateExamQuestions(text);
+      let text = req.body.text || "";
+      
+      if (req.file) {
+        const data = await pdf(req.file.buffer);
+        text = data.text;
+      }
+
+      const input = api.exams.generate.input.parse({
+        text: text,
+        difficulty: req.body.difficulty,
+        shortQuestions: parseInt(req.body.shortQuestions) || 5,
+        longQuestions: parseInt(req.body.longQuestions) || 0,
+      });
+
+      const generated = await generateExamQuestions(text, {
+        difficulty: input.difficulty,
+        shortQuestions: input.shortQuestions,
+        longQuestions: input.longQuestions
+      });
+      
       res.json(generated);
     } catch (e: any) {
+      console.error("Generation error:", e);
       res.status(400).json({ message: e.message });
     }
   });

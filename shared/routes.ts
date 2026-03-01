@@ -123,7 +123,12 @@ export const api = {
     generate: {
       method: 'POST' as const,
       path: '/api/exams/generate' as const,
-      input: z.object({ text: z.string() }),
+      input: z.object({ 
+        text: z.string().optional(),
+        difficulty: z.enum(['easy', 'medium', 'hard', 'complex']).default('medium'),
+        shortQuestions: z.number().default(5),
+        longQuestions: z.number().default(0),
+      }),
       responses: {
         200: z.object({
           title: z.string(),

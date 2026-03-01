@@ -72,11 +72,23 @@ export function usePublishExam() {
 
 export function useGenerateExam() {
   return useMutation({
-    mutationFn: async (text: string) => {
+    mutationFn: async (data: { 
+      text?: string, 
+      file?: File,
+      difficulty: string,
+      shortQuestions: number,
+      longQuestions: number
+    }) => {
+      const formData = new FormData();
+      if (data.text) formData.append('text', data.text);
+      if (data.file) formData.append('file', data.file);
+      formData.append('difficulty', data.difficulty);
+      formData.append('shortQuestions', data.shortQuestions.toString());
+      formData.append('longQuestions', data.longQuestions.toString());
+
       const res = await fetch(api.exams.generate.path, {
         method: api.exams.generate.method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
+        body: formData,
         credentials: "include",
       });
       if (!res.ok) {
