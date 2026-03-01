@@ -53,6 +53,9 @@ function Router() {
       <Route path="/teacher/exam/new">
         {() => <ProtectedRoute component={CreateExamPage} allowedRole="teacher" />}
       </Route>
+      <Route path="/teacher/exam/:id/edit">
+        {() => <ProtectedRoute component={CreateExamPage} allowedRole="teacher" />}
+      </Route>
       <Route path="/teacher/exam/:id">
         {() => <ProtectedRoute component={ExamDetailsPage} allowedRole="teacher" />}
       </Route>

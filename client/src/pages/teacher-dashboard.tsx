@@ -134,19 +134,24 @@ export default function TeacherDashboard() {
                             <Eye className="w-4 h-4 mr-2" /> View
                           </Button>
                         </Link>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-10 w-10 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/5"
-                          title="Edit Exam"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </Button>
+                        <Link href={`/teacher/exam/${exam.id}/edit`}>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-10 w-10 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/5"
+                            title="Edit Exam"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+                        </Link>
                         <Button 
                           variant="ghost" 
                           size="icon" 
                           className="h-10 w-10 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/5"
-                          onClick={() => handleDelete(exam.id)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleDelete(exam.id);
+                          }}
                           disabled={deleteMutation.isPending}
                           title="Delete Exam"
                         >

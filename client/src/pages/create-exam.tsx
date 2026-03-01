@@ -1,13 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Layout } from "@/components/layout";
-import { useCreateExam, useGenerateExam } from "@/hooks/use-exams";
-import { useLocation } from "wouter";
+import { useCreateExam, useGenerateExam, useExam } from "@/hooks/use-exams";
+import { useLocation, useParams } from "wouter";
 import { Plus, Trash2, ArrowLeft, Save, Sparkles, FileText, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { api, buildUrl } from "@shared/routes";
 
 export default function CreateExamPage() {
+  const { id } = useParams<{ id?: string }>();
+  const isEditing = !!id;
+  const examId = id ? parseInt(id) : null;
+  
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [durationMinutes, setDurationMinutes] = useState(30);
@@ -21,10 +27,46 @@ export default function CreateExamPage() {
     { text: "", type: "mcq", partition: 1, options: ["", "", "", ""], correctAnswer: "" }
   ]);
 
+  const { data: existingExam, isLoading: isLoadingExam } = useExam(examId || 0);
   const createMutation = useCreateExam();
   const generateMutation = useGenerateExam();
+  const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+
+  const updateMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const url = buildUrl(api.exams.update.path, { id: examId! });
+      const res = await fetch(url, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to update exam");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.exams.list.path] });
+      queryClient.invalidateQueries({ queryKey: [api.exams.get.path, examId] });
+      toast({ title: "Exam updated successfully" });
+      setLocation("/teacher");
+    }
+  });
+
+  useEffect(() => {
+    if (isEditing && existingExam) {
+      setTitle(existingExam.title);
+      setDescription(existingExam.description || "");
+      setDurationMinutes(existingExam.durationMinutes);
+      if (existingExam.questions && existingExam.questions.length > 0) {
+        setQuestions(existingExam.questions.map((q: any) => ({
+          ...q,
+          options: q.options || ["", "", "", ""]
+        })));
+      }
+    }
+  }, [existingExam, isEditing]);
 
   const handleGenerate = async () => {
     if (!aiInput && !aiFile) {
@@ -98,18 +140,37 @@ export default function CreateExamPage() {
     }
 
     try {
-      await createMutation.mutateAsync({
-        title,
-        description,
-        durationMinutes,
-        questions
-      });
-      toast({ title: "Exam created successfully" });
-      setLocation("/teacher");
+      if (isEditing) {
+        await updateMutation.mutateAsync({
+          title,
+          description,
+          durationMinutes,
+          questions
+        });
+      } else {
+        await createMutation.mutateAsync({
+          title,
+          description,
+          durationMinutes,
+          questions
+        });
+        toast({ title: "Exam created successfully" });
+        setLocation("/teacher");
+      }
     } catch (err: any) {
       toast({ variant: "destructive", title: "Error", description: err.message });
     }
   };
+
+  if (isEditing && isLoadingExam) {
+    return (
+      <Layout>
+        <div className="flex justify-center items-center h-64">
+          <Loader2 className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -118,8 +179,8 @@ export default function CreateExamPage() {
           <Link href="/teacher" className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground mb-4 transition-colors">
             <ArrowLeft className="w-4 h-4 mr-1" /> Back to Dashboard
           </Link>
-          <h1 className="font-display text-3xl font-bold text-foreground">Create New Exam</h1>
-          <p className="text-muted-foreground mt-1 text-lg">Define the exam details and add questions.</p>
+          <h1 className="font-display text-3xl font-bold text-foreground">{isEditing ? "Edit Exam" : "Create New Exam"}</h1>
+          <p className="text-muted-foreground mt-1 text-lg">{isEditing ? "Modify the exam details and questions." : "Define the exam details and add questions."}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
@@ -373,11 +434,11 @@ export default function CreateExamPage() {
             </Link>
             <button 
               type="submit" 
-              disabled={createMutation.isPending}
+              disabled={createMutation.isPending || updateMutation.isPending}
               className="inline-flex items-center gap-2 px-8 py-3 rounded-xl font-semibold bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:-translate-y-0.5 hover:shadow-xl transition-all disabled:opacity-50"
             >
               <Save className="w-4 h-4" />
-              {createMutation.isPending ? "Saving..." : "Save Exam"}
+              {createMutation.isPending || updateMutation.isPending ? "Saving..." : (isEditing ? "Update Exam" : "Save Exam")}
             </button>
           </div>
         </form>
