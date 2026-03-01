@@ -42,7 +42,13 @@ export default function CreateExamPage() {
         longQuestions: longCount
       });
       setTitle(result.title);
-      setQuestions(result.questions);
+      setQuestions(result.questions.map((q: any) => ({
+        ...q,
+        type: q.type || "mcq",
+        partition: q.partition || 1,
+        options: q.options || ["", "", "", ""],
+        correctAnswer: q.correctAnswer || ""
+      })));
       toast({ title: "Exam generated successfully!" });
     } catch (err: any) {
       toast({ variant: "destructive", title: "Generation failed", description: err.message });
@@ -86,6 +92,9 @@ export default function CreateExamPage() {
         return toast({ variant: "destructive", title: `Question ${i+1} has empty options` });
       }
       if (!q.correctAnswer) return toast({ variant: "destructive", title: `Question ${i+1} has no correct answer or guideline` });
+      if (typeof q.partition !== 'number') {
+        return toast({ variant: "destructive", title: `Question ${i+1} is missing a partition assignment` });
+      }
     }
 
     try {
