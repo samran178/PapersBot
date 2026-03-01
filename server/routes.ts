@@ -209,7 +209,8 @@ export async function registerRoutes(
 
     const user = await storage.getUser(req.session.userId!);
     if (user?.role === 'student') {
-      exam.questions = exam.questions.map((q: any) => ({
+      const filteredQuestions = exam.questions.filter((q: any) => q.partition === attempt.currentPartition);
+      exam.questions = filteredQuestions.map((q: any) => ({
         id: q.id,
         examId: q.examId,
         text: q.text,
