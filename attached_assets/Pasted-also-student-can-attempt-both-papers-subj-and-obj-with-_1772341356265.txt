@@ -1,0 +1,253 @@
+also student can attempt both papers subj and obj with proper privacy like no cheating things first paper created by teacher and it stored in the teacher panel like this teacher create this paper and from that panel teacher can publish this paper to student panel now on student panel student could see all the published paper by their teachers and the time limit like they can attempted this paper with in 3,4 days or what ever the limit is set by the teacher! when student attempt the paper system should ask from him weather he want to attempt the paper in one take or he want to divide the paper into different modules(maximum 4) parts then system will devide the paper into four parts which will also set by the teacher from teacher panel like if any student want to attempt the paper in parts so he can time should also distribute according to parts and student will able to get next part after submiting theprevious part , student could take breaks between the paper parts/portions . when student complete the paper it safes in the database and also teacher could see which student complete his paper within time or over time.
+Teacher Side
+
+Create paper (subjective + objective)
+
+Store under teacher ownership
+
+Set:
+
+Total duration
+
+Deadline window (e.g., 3 days)
+
+Attempt limit
+
+Modular option (1 full OR up to 4 parts)
+
+Module structure (e.g., Section A, B, C, D)
+
+Publish to students
+
+👨‍🎓 Student Side
+
+See only:
+
+Papers published by their teachers
+
+Within active date range
+
+Choose:
+
+Attempt full paper in one go
+
+OR attempt in modules (max 4 parts)
+
+If modular:
+
+Time distributed per module
+
+Cannot access next part before submitting previous
+
+Can take breaks between parts
+
+System records:
+
+Start time
+
+End time
+
+Over time / within time
+
+Attempt number
+
+Final submission stored properly
+
+Auto grade objective
+
+Teacher manually grades subjective.
+
+FLOW DESIGN (Very Important)
+1️⃣ Teacher Flow
+
+Create → Save → Define modules → Publish
+
+2️⃣ Student Flow (Full Mode)
+
+Click Attempt
+
+Backend:
+
+Check date window
+
+Check attempt count
+
+Check no active attempt
+
+Create exam_attempt
+
+Start timer
+
+Submit
+
+Auto grade
+
+Save
+
+Mark within_time / overtime
+
+3️⃣ Student Flow (Modular Mode)
+
+Student selects modular
+
+System creates exam_attempt
+
+Only module 1 unlocked
+
+Student submits module 1
+
+module_attempt saved
+
+Module 2 unlocked
+
+Continue until finished
+
+Final scoring
+
+completed_at stored
+
+⏳ Time Control Logic
+
+We do NOT trust frontend timer.
+
+Backend checks:
+
+current_time - started_at > allowed_time
+
+If exceeded:
+
+Auto mark as timeout
+
+Lock submission
+
+This is professional-level exam control.
+
+📊 Teacher Dashboard Should Show
+
+For each exam:
+
+Total students attempted
+
+Completed
+
+In progress
+
+Over time
+
+Average score
+
+Individual attempt details
+
+For each student:
+
+Attempt number
+
+Mode (full/modular)
+
+Completion time
+
+Within time or not
+
+Score
+
+Tools and tech:
+Backend Technologies
+1️⃣ Python
+
+Main programming language.
+
+Why?
+
+Simple
+
+Fast to develop
+
+Huge ecosystem
+
+Perfect for academic + production systems
+
+2️⃣ Flask
+
+Micro web framework.
+
+Used for:
+
+Creating API routes
+
+Handling HTTP requests
+
+JSON responses
+
+Structuring backend
+
+Your API endpoints like:
+
+/api/login
+/api/teacher/exams
+/api/student/attempt
+
+are built using Flask.
+
+3️⃣ Flask-JWT-Extended
+
+Authentication system.
+
+Used for:
+
+Login tokens
+
+Protecting routes
+
+Role-based access (teacher/student)
+
+Without JWT → anyone could create exams.
+
+4️⃣ PostgreSQL
+
+Relational database.
+
+Used for:
+
+Users
+
+Exams
+
+Modules
+
+Questions
+
+Attempts
+
+Answers
+
+Why PostgreSQL?
+
+Very strong relational integrity
+
+JSONB support (for MCQ options)
+
+Production-grade
+
+University-level FYP standard
+
+5️⃣ psycopg2
+
+Python PostgreSQL driver.
+
+Used for:
+
+Connecting Flask to PostgreSQL
+
+Executing SQL queries
+
+6️⃣ bcrypt
+
+Password hashing.
+
+Used for:
+
+Secure password storage
+
+Prevent plain text password leaks
+
+this is the system i want to build a system like that.
