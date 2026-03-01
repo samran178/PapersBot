@@ -82,8 +82,10 @@ export default function CreateExamPage() {
     for (let i = 0; i < questions.length; i++) {
       const q = questions[i];
       if (!q.text) return toast({ variant: "destructive", title: `Question ${i+1} is missing text` });
-      if (q.options.some(o => !o)) return toast({ variant: "destructive", title: `Question ${i+1} has empty options` });
-      if (!q.correctAnswer) return toast({ variant: "destructive", title: `Question ${i+1} has no correct answer selected` });
+      if (q.type === 'mcq' && (!q.options || q.options.some((o: string) => !o))) {
+        return toast({ variant: "destructive", title: `Question ${i+1} has empty options` });
+      }
+      if (!q.correctAnswer) return toast({ variant: "destructive", title: `Question ${i+1} has no correct answer or guideline` });
     }
 
     try {
