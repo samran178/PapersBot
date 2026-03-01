@@ -71,6 +71,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async startAttempt(examId: number, studentId: number): Promise<Attempt> {
+    const [existing] = await db.select()
+      .from(attempts)
+      .where(eq(attempts.examId, examId))
+      .where(eq(attempts.studentId, studentId))
+      .where(eq(attempts.isCompleted, false));
+
+    if (existing) {
+      return existing;
+    }
+
     const [attempt] = await db.insert(attempts).values({
       examId,
       studentId,
