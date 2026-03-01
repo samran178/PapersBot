@@ -121,6 +121,8 @@ export async function registerRoutes(
         id: q.id,
         examId: q.examId,
         text: q.text,
+        type: q.type,
+        partition: q.partition,
         options: q.options
       }));
     }

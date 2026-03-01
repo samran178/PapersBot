@@ -33,12 +33,19 @@ Return ONLY a JSON object with this structure:
       "text": "The question text",
       "type": "long",
       "partition": 2,
-      "options": null,
+      "options": [],
       "correctAnswer": "A brief summary of what the correct answer should contain"
+    },
+    {
+      "text": "The question text",
+      "type": "short",
+      "partition": 1,
+      "options": [],
+      "correctAnswer": "A concise answer guideline"
     }
   ]
 }
-Note: Randomly distribute questions into the requested number of partitions (1, 2, or 3). For long and short questions (non-MCQ), set type to 'long' or 'short' and options to null.`;
+Note: Randomly distribute questions into the requested number of partitions (1, 2, or 3). For long and short questions (non-MCQ), set type to 'long' or 'short' and set options to an empty array [].`;
 
   const response = await openai.chat.completions.create({
     model: "gpt-4o", // Use a high-capability model for better accuracy
