@@ -19,7 +19,7 @@ const questionSchema = z.object({
   type: z.string(),
   partition: z.number(),
   text: z.string(),
-  options: z.array(z.string()).nullable().optional(),
+  options: z.array(z.string()).nullable().optional().default([]),
   correctAnswer: z.string().optional() // Hidden from students unless completed
 });
 
@@ -108,7 +108,7 @@ export const api = {
           text: z.string(),
           type: z.enum(['mcq', 'short', 'long']),
           partition: z.number().min(1).max(4),
-          options: z.array(z.string()).optional(),
+          options: z.array(z.string()).nullable().optional().default([]),
           correctAnswer: z.string()
         }))
       }),
@@ -139,7 +139,7 @@ export const api = {
           title: z.string(),
           questions: z.array(z.object({
             text: z.string(),
-            options: z.array(z.string()),
+            options: z.array(z.string()).nullable().optional().default([]),
             correctAnswer: z.string()
           }))
         }),
