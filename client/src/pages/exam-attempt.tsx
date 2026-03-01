@@ -124,9 +124,10 @@ export default function ExamAttemptPage() {
   const secs = timeLeft !== null ? timeLeft % 60 : 0;
   const isLowTime = timeLeft !== null && timeLeft < 300; // less than 5 mins
 
-  const questions = (attempt.exam.questions || []).filter(q => q.partition === attempt.currentPartition);
-  const answeredCount = Object.keys(answers).length;
-  const isComplete = answeredCount === questions.length;
+  const questions = (attempt.exam.questions || []);
+  const currentQuestions = questions.filter(q => q.partition === attempt.currentPartition);
+  const answeredCount = Object.keys(answers).filter(id => currentQuestions.some(q => q.id === parseInt(id))).length;
+  const isComplete = answeredCount === currentQuestions.length;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -164,61 +165,67 @@ export default function ExamAttemptPage() {
         <div className="h-1 bg-secondary w-full">
           <div 
             className="h-full bg-primary transition-all duration-300" 
-            style={{ width: `${(answeredCount / questions.length) * 100}%` }}
+            style={{ width: `${currentQuestions.length > 0 ? (answeredCount / currentQuestions.length) * 100 : 0}%` }}
           />
         </div>
       </header>
 
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-10">
-        {!isComplete && (
+        {!isComplete && currentQuestions.length > 0 && (
           <div className="flex items-center gap-2 text-sm font-medium text-amber-700 bg-amber-50 p-4 rounded-xl border border-amber-200">
             <AlertCircle className="w-4 h-4 shrink-0" />
-            Answer all questions in this part before submitting. ({answeredCount}/{questions.length} completed)
+            Answer all questions in this part before submitting. ({answeredCount}/{currentQuestions.length} completed)
           </div>
         )}
 
-        {questions.map((q, index) => (
-          <div key={q.id} className="bg-card border border-border rounded-2xl p-6 sm:p-8 shadow-sm">
-            <div className="flex gap-4 mb-6">
-              <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0">
-                {index + 1}
+        {currentQuestions.length === 0 ? (
+           <div className="text-center p-12 bg-secondary/20 rounded-2xl border border-dashed border-border">
+             No questions found in Part {attempt.currentPartition}. Please contact your teacher.
+           </div>
+        ) : (
+          currentQuestions.map((q, index) => (
+            <div key={q.id} className="bg-card border border-border rounded-2xl p-6 sm:p-8 shadow-sm">
+              <div className="flex gap-4 mb-6">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0">
+                  {index + 1}
+                </div>
+                <h2 className="text-lg font-medium text-foreground leading-relaxed pt-1">{q.text}</h2>
               </div>
-              <h2 className="text-lg font-medium text-foreground leading-relaxed pt-1">{q.text}</h2>
-            </div>
 
-            <div className="space-y-3 pl-12">
-              {q.type === 'mcq' ? (
-                (q.options || []).map((opt, oIndex) => (
-                  <label 
-                    key={oIndex} 
-                    className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all ${
-                      answers[q.id] === opt 
-                        ? 'border-primary bg-primary/5 ring-1 ring-primary' 
-                        : 'border-border hover:bg-secondary/50'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name={`q-${q.id}`}
-                      value={opt}
-                      checked={answers[q.id] === opt}
-                      onChange={() => setAnswers(prev => ({ ...prev, [q.id]: opt }))}
-                      className="w-5 h-5 text-primary border-border focus:ring-primary"
-                    />
-                    <span className="text-foreground">{opt}</span>
-                  </label>
-                ))
-              ) : (
-                <textarea
-                  className="w-full px-4 py-3 rounded-xl bg-transparent border border-input text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all min-h-[150px] resize-y"
-                  placeholder="Write your answer here..."
-                  value={answers[q.id] || ""}
-                  onChange={(e) => setAnswers(prev => ({ ...prev, [q.id]: e.target.value }))}
-                />
-              )}
+              <div className="space-y-3 pl-12">
+                {q.type === 'mcq' ? (
+                  (q.options || []).map((opt: string, oIndex: number) => (
+                    <label 
+                      key={oIndex} 
+                      className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all ${
+                        answers[q.id] === opt 
+                          ? 'border-primary bg-primary/5 ring-1 ring-primary' 
+                          : 'border-border hover:bg-secondary/50'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name={`q-${q.id}`}
+                        value={opt}
+                        checked={answers[q.id] === opt}
+                        onChange={() => setAnswers(prev => ({ ...prev, [q.id]: opt }))}
+                        className="w-5 h-5 text-primary border-border focus:ring-primary"
+                      />
+                      <span className="text-foreground">{opt}</span>
+                    </label>
+                  ))
+                ) : (
+                  <textarea
+                    className="w-full px-4 py-3 rounded-xl bg-transparent border border-input text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all min-h-[150px] resize-y"
+                    placeholder="Write your answer here..."
+                    value={answers[q.id] || ""}
+                    onChange={(e) => setAnswers(prev => ({ ...prev, [q.id]: e.target.value }))}
+                  />
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
 
         <div className="pt-8 pb-20 flex justify-center sm:hidden">
           <button
