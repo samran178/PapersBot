@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { users, exams, questions, attempts, attemptAnswers } from "@shared/schema";
 import type { User, InsertUser, Exam, Question, Attempt } from "@shared/schema";
 
@@ -9,7 +9,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   
   createExam(exam: Omit<Exam, "id" | "createdAt">, examQuestions: Omit<Question, "id" | "examId">[]): Promise<Exam>;
-  getExams(): Promise<Exam[]>;
+  getExams(): Promise<any[]>;
   getExam(id: number): Promise<Exam | undefined>;
   getExamWithQuestions(id: number): Promise<any>;
   publishExam(id: number): Promise<Exam>;
@@ -51,8 +51,12 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
-  async getExams(): Promise<Exam[]> {
-    return await db.select().from(exams);
+  async getExams(): Promise<any[]> {
+    const allExams = await db.select().from(exams);
+    return Promise.all(allExams.map(async (exam) => {
+      const examQuestions = await db.select().from(questions).where(eq(questions.examId, exam.id));
+      return { ...exam, questions: examQuestions };
+    }));
   }
 
   async getExam(id: number): Promise<Exam | undefined> {
@@ -100,9 +104,11 @@ export class DatabaseStorage implements IStorage {
   async startAttempt(examId: number, studentId: number): Promise<Attempt> {
     const [existing] = await db.select()
       .from(attempts)
-      .where(eq(attempts.examId, examId))
-      .where(eq(attempts.studentId, studentId))
-      .where(eq(attempts.isCompleted, false));
+      .where(and(
+        eq(attempts.examId, examId),
+        eq(attempts.studentId, studentId),
+        eq(attempts.isCompleted, false)
+      ));
 
     if (existing) {
       return existing;
@@ -151,14 +157,13 @@ export class DatabaseStorage implements IStorage {
     if (!attempt) throw new Error("Attempt not found");
     
     const examQuestions = await db.select().from(questions).where(eq(questions.examId, attempt.examId));
-    const currentPartitionQuestions = examQuestions.filter(q => q.partition === attempt.currentPartition);
-    const maxPartition = Math.max(...examQuestions.map(q => q.partition));
+    const mcqQuestions = examQuestions.filter(q => q.type === 'mcq');
 
-    let scoreIncrement = 0;
-    
+    let correctCount = 0;
+
     await db.transaction(async (tx) => {
       for (const ans of answers) {
-        const q = currentPartitionQuestions.find(q => q.id === ans.questionId);
+        const q = examQuestions.find(q => q.id === ans.questionId);
         if (q) {
           await tx.insert(attemptAnswers).values({
             attemptId,
@@ -166,21 +171,20 @@ export class DatabaseStorage implements IStorage {
             answer: ans.answer
           });
           if (q.type === 'mcq' && q.correctAnswer === ans.answer) {
-            scoreIncrement += 1;
+            correctCount += 1;
           }
         }
       }
-      
-      const isFinal = attempt.currentPartition >= maxPartition;
-      
-      const [updated] = await tx.update(attempts).set({
-        endTime: isFinal ? new Date() : null,
-        isCompleted: isFinal,
-        currentPartition: isFinal ? attempt.currentPartition : attempt.currentPartition + 1,
-        score: (attempt.score || 0) + scoreIncrement
-      }).where(eq(attempts.id, attemptId)).returning();
-      
-      return updated;
+
+      const score = mcqQuestions.length > 0
+        ? Math.round((correctCount / mcqQuestions.length) * 100)
+        : 0;
+
+      await tx.update(attempts).set({
+        endTime: new Date(),
+        isCompleted: true,
+        score
+      }).where(eq(attempts.id, attemptId));
     });
     
     const [finalAttempt] = await db.select().from(attempts).where(eq(attempts.id, attemptId));

@@ -88,6 +88,21 @@ export async function registerRoutes(
   // Exams
   app.get(api.exams.list.path, requireAuth, async (req, res) => {
     const exams = await storage.getExams();
+    const user = await storage.getUser(req.session.userId!);
+    if (user?.role === 'student') {
+      const sanitized = exams.map((exam: any) => ({
+        ...exam,
+        questions: (exam.questions || []).map((q: any) => ({
+          id: q.id,
+          examId: q.examId,
+          text: q.text,
+          type: q.type,
+          partition: q.partition,
+          options: q.options
+        }))
+      }));
+      return res.json(sanitized);
+    }
     res.json(exams);
   });
 
