@@ -13,6 +13,8 @@ export interface IStorage {
   getExam(id: number): Promise<Exam | undefined>;
   getExamWithQuestions(id: number): Promise<any>;
   publishExam(id: number): Promise<Exam>;
+  updateExam(id: number, exam: any, questions: any[]): Promise<Exam>;
+  deleteExam(id: number): Promise<void>;
   
   startAttempt(examId: number, studentId: number): Promise<Attempt>;
   getAttempt(id: number): Promise<any>;
@@ -68,6 +70,31 @@ export class DatabaseStorage implements IStorage {
   async publishExam(id: number): Promise<Exam> {
     const [exam] = await db.update(exams).set({ isPublished: true }).where(eq(exams.id, id)).returning();
     return exam;
+  }
+
+  async updateExam(id: number, examData: any, examQuestions: any[]): Promise<Exam> {
+    return await db.transaction(async (tx) => {
+      const [exam] = await tx.update(exams).set(examData).where(eq(exams.id, id)).returning();
+      if (examQuestions) {
+        // Simple strategy: delete and recreate questions for the exam
+        await tx.delete(questions).where(eq(questions.examId, id));
+        if (examQuestions.length > 0) {
+          await tx.insert(questions).values(
+            examQuestions.map(q => ({ ...q, examId: id, id: undefined }))
+          );
+        }
+      }
+      return exam;
+    });
+  }
+
+  async deleteExam(id: number): Promise<void> {
+    await db.transaction(async (tx) => {
+      await tx.delete(attemptAnswers).where(eq(attemptAnswers.attemptId, db.select({ id: attempts.id }).from(attempts).where(eq(attempts.examId, id))));
+      await tx.delete(attempts).where(eq(attempts.examId, id));
+      await tx.delete(questions).where(eq(questions.examId, id));
+      await tx.delete(exams).where(eq(exams.id, id));
+    });
   }
 
   async startAttempt(examId: number, studentId: number): Promise<Attempt> {

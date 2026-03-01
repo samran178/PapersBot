@@ -139,6 +139,26 @@ export async function registerRoutes(
     }
   });
 
+  app.patch(api.exams.update.path, requireAuth, async (req, res) => {
+    try {
+      const data = api.exams.update.input.parse(req.body);
+      const { questions, ...examData } = data;
+      const exam = await storage.updateExam(parseInt(req.params.id), examData, questions || []);
+      res.json(exam);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.delete(api.exams.delete.path, requireAuth, async (req, res) => {
+    try {
+      await storage.deleteExam(parseInt(req.params.id));
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(404).json({ message: "Exam not found" });
+    }
+  });
+
   app.post(api.exams.generate.path, requireAuth, upload.single('file'), async (req, res) => {
     try {
       let text = req.body.text || "";

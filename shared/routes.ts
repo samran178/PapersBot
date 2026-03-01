@@ -125,6 +125,33 @@ export const api = {
         404: errorSchemas.notFound,
       }
     },
+    update: {
+      method: 'PATCH' as const,
+      path: '/api/exams/:id' as const,
+      input: insertExamSchema.partial().extend({
+        questions: z.array(z.object({
+          id: z.number().optional(),
+          text: z.string(),
+          type: z.enum(['mcq', 'short', 'long']),
+          partition: z.number().min(1).max(4),
+          options: z.array(z.string()).nullable().optional().default([]),
+          correctAnswer: z.string()
+        })).optional()
+      }),
+      responses: {
+        200: examSchema,
+        404: errorSchemas.notFound,
+        400: errorSchemas.validation,
+      }
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/exams/:id' as const,
+      responses: {
+        200: z.object({ success: z.boolean() }),
+        404: errorSchemas.notFound,
+      }
+    },
     generate: {
       method: 'POST' as const,
       path: '/api/exams/generate' as const,

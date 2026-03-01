@@ -52,6 +52,7 @@ export const attemptAnswers = pgTable("attempt_answers", {
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });
 export const insertExamSchema = createInsertSchema(exams).omit({ id: true, createdAt: true, teacherId: true });
 export const insertQuestionSchema = createInsertSchema(questions).omit({ id: true, examId: true });
+export const updateExamSchema = insertExamSchema.partial();
 export const insertAttemptSchema = createInsertSchema(attempts).omit({ id: true, startTime: true, endTime: true, score: true, isCompleted: true, isTimeout: true, studentId: true });
 
 export type User = typeof users.$inferSelect;
