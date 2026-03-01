@@ -40,26 +40,26 @@ export default function AuthPage() {
   const isPending = isLoggingIn || isRegistering;
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2 bg-background">
+    <div className="min-h-screen grid lg:grid-cols-2 bg-background/50">
       {/* Left side branding */}
-      <div className="hidden lg:flex flex-col justify-between p-12 bg-zinc-900 text-white relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 to-zinc-950 z-0" />
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-zinc-700/20 rounded-full blur-3xl" />
+      <div className="hidden lg:flex flex-col justify-between p-12 bg-primary text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary to-blue-900 z-0 opacity-90" />
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
         
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-16">
-            <div className="w-12 h-12 rounded-xl bg-white overflow-hidden flex items-center justify-center shadow-lg">
+            <div className="w-12 h-12 rounded-2xl bg-white overflow-hidden flex items-center justify-center shadow-xl border-2 border-white/20">
               <img src={logoUrl} alt="PaperBot" className="w-full h-full object-cover" />
             </div>
             <span className="font-display font-bold text-2xl tracking-tight">PaperBot</span>
           </div>
           
           <h1 className="font-display text-5xl md:text-6xl font-bold leading-[1.1] tracking-tight mb-6">
-            Paper Generation,<br/>
-            <span className="text-zinc-400">made intelligent.</span>
+            Elevate Your<br/>
+            <span className="text-blue-200">Education.</span>
           </h1>
-          <p className="text-lg text-zinc-400 max-w-md leading-relaxed">
-            Create, manage, and take exams in a distraction-free environment designed for focus.
+          <p className="text-lg text-blue-100 max-w-md leading-relaxed">
+            A professional platform for intelligent exam management and focused learning.
           </p>
         </div>
 
