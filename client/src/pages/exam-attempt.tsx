@@ -3,6 +3,7 @@ import { useParams, useLocation } from "wouter";
 import { useAttempt, useSubmitAttempt } from "@/hooks/use-attempts";
 import { Clock, AlertCircle, ArrowRight, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 
 export default function ExamAttemptPage() {
   const { id } = useParams<{ id: string }>();
