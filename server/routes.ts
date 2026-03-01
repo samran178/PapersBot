@@ -7,7 +7,7 @@ import session from "express-session";
 import createMemoryStore from "memorystore";
 import { generateExamQuestions } from "./openai";
 import multer from "multer";
-import pdf from "pdf-parse";
+import pdf from "pdf-parse/lib/pdf-parse.js";
 
 const upload = multer({ storage: multer.memoryStorage() });
 const MemoryStore = createMemoryStore(session);
