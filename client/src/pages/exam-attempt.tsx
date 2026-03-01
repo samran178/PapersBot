@@ -48,21 +48,28 @@ export default function ExamAttemptPage() {
     await handleSubmit();
   };
 
+  const [showBreakDialog, setShowBreakDialog] = useState(false);
+
   const handleSubmit = async () => {
     if (!attempt?.exam) return;
     
-    // Format answers array
     const formattedAnswers = Object.entries(answers).map(([qId, ans]) => ({
       questionId: parseInt(qId),
       answer: ans
     }));
 
     try {
-      await submitMutation.mutateAsync({
+      const updatedAttempt = await submitMutation.mutateAsync({
         id: attemptId,
         data: { answers: formattedAnswers }
       });
-      setLocation(`/student/result/${attemptId}`);
+
+      if (updatedAttempt.isCompleted) {
+        setLocation(`/student/result/${attemptId}`);
+      } else {
+        setAnswers({});
+        setShowBreakDialog(true);
+      }
     } catch (err: any) {
       toast({ variant: "destructive", title: "Failed to submit", description: err.message });
     }
@@ -70,6 +77,37 @@ export default function ExamAttemptPage() {
 
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin" /></div>;
+  }
+
+  if (showBreakDialog) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4 text-center">
+        <div className="max-w-md w-full bg-card border border-border rounded-3xl p-8 shadow-xl space-y-6">
+          <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto">
+            <Clock className="w-8 h-8" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold font-display">Part {attempt.currentPartition - 1} Submitted!</h2>
+            <p className="text-muted-foreground">You've completed this section. Would you like to take a short break or continue to the next part right away?</p>
+          </div>
+          <div className="flex flex-col gap-3 pt-4">
+            <Button 
+              onClick={() => setShowBreakDialog(false)}
+              className="w-full py-6 rounded-2xl font-bold text-lg"
+            >
+              Continue to Part {attempt.currentPartition}
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => setLocation("/student")}
+              className="w-full py-6 rounded-2xl font-bold text-lg"
+            >
+              Take a Break (Dashboard)
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!attempt || !attempt.exam) {
