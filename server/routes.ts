@@ -201,7 +201,23 @@ export async function registerRoutes(
   app.get(api.attempts.get.path, requireAuth, async (req, res) => {
     const attempt = await storage.getAttempt(parseInt(req.params.id));
     if (!attempt) return res.status(404).json({ message: "Not found" });
-    res.json(attempt);
+    
+    const exam = await storage.getExamWithQuestions(attempt.examId);
+    if (!exam) return res.status(404).json({ message: "Exam not found" });
+
+    const user = await storage.getUser(req.session.userId!);
+    if (user?.role === 'student') {
+      exam.questions = exam.questions.map((q: any) => ({
+        id: q.id,
+        examId: q.examId,
+        text: q.text,
+        type: q.type,
+        partition: q.partition,
+        options: q.options
+      }));
+    }
+
+    res.json({ ...attempt, exam });
   });
 
   return httpServer;
