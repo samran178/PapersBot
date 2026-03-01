@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { BookOpen, ArrowRight, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-import logoUrl from "@assets/image_1772344501752.png";
+import logoUrl from "@assets/WhatsApp_Image_2026-03-01_at_12.29.09_PM_1772352996932.jpeg";
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);

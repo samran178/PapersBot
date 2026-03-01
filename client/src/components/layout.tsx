@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { BookOpen, LogOut, Loader2, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-import logoUrl from "@assets/image_1772344501752.png";
+import logoUrl from "@assets/WhatsApp_Image_2026-03-01_at_12.29.09_PM_1772352996932.jpeg";
 
 export function Layout({ children }: { children: ReactNode }) {
   const { user, logout, isLoading } = useAuth();
