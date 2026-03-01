@@ -1,18 +1,60 @@
-import { sql } from "drizzle-orm";
-import { pgTable, text, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
+  role: text("role").notNull().default("student"),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
+export const exams = pgTable("exams", {
+  id: serial("id").primaryKey(),
+  teacherId: integer("teacher_id").notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  durationMinutes: integer("duration_minutes").notNull(),
+  isPublished: boolean("is_published").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
 });
+
+export const questions = pgTable("questions", {
+  id: serial("id").primaryKey(),
+  examId: integer("exam_id").notNull(),
+  text: text("text").notNull(),
+  options: jsonb("options").notNull(), // string[]
+  correctAnswer: text("correct_answer").notNull(),
+});
+
+export const attempts = pgTable("attempts", {
+  id: serial("id").primaryKey(),
+  examId: integer("exam_id").notNull(),
+  studentId: integer("student_id").notNull(),
+  startTime: timestamp("start_time").defaultNow(),
+  endTime: timestamp("end_time"),
+  score: integer("score"),
+  isCompleted: boolean("is_completed").default(false),
+  isTimeout: boolean("is_timeout").default(false),
+});
+
+export const attemptAnswers = pgTable("attempt_answers", {
+  id: serial("id").primaryKey(),
+  attemptId: integer("attempt_id").notNull(),
+  questionId: integer("question_id").notNull(),
+  answer: text("answer").notNull(),
+});
+
+export const insertUserSchema = createInsertSchema(users).omit({ id: true });
+export const insertExamSchema = createInsertSchema(exams).omit({ id: true, createdAt: true, teacherId: true });
+export const insertQuestionSchema = createInsertSchema(questions).omit({ id: true, examId: true });
+export const insertAttemptSchema = createInsertSchema(attempts).omit({ id: true, startTime: true, endTime: true, score: true, isCompleted: true, isTimeout: true, studentId: true });
+
+export type User = typeof users.$inferSelect;
+export type Exam = typeof exams.$inferSelect;
+export type Question = typeof questions.$inferSelect;
+export type Attempt = typeof attempts.$inferSelect;
+export type AttemptAnswer = typeof attemptAnswers.$inferSelect;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
