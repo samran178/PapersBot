@@ -16,8 +16,10 @@ const userSchema = z.object({
 const questionSchema = z.object({
   id: z.number(),
   examId: z.number(),
+  type: z.string(),
+  partition: z.number(),
   text: z.string(),
-  options: z.array(z.string()),
+  options: z.array(z.string()).nullable().optional(),
   correctAnswer: z.string().optional() // Hidden from students unless completed
 });
 
@@ -36,6 +38,7 @@ const attemptSchema = z.object({
   id: z.number(),
   examId: z.number(),
   studentId: z.number(),
+  currentPartition: z.number(),
   startTime: z.string().nullable(),
   endTime: z.string().nullable(),
   score: z.number().nullable(),
@@ -103,7 +106,9 @@ export const api = {
       input: insertExamSchema.extend({
         questions: z.array(z.object({
           text: z.string(),
-          options: z.array(z.string()),
+          type: z.enum(['mcq', 'short', 'long']),
+          partition: z.number().min(1).max(4),
+          options: z.array(z.string()).optional(),
           correctAnswer: z.string()
         }))
       }),

@@ -23,15 +23,18 @@ export const exams = pgTable("exams", {
 export const questions = pgTable("questions", {
   id: serial("id").primaryKey(),
   examId: integer("exam_id").notNull(),
+  type: text("type").notNull().default("mcq"), // 'mcq', 'short', 'long'
+  partition: integer("partition").notNull().default(1),
   text: text("text").notNull(),
-  options: jsonb("options").notNull(), // string[]
-  correctAnswer: text("correct_answer").notNull(),
+  options: jsonb("options"), // string[] (only for mcq)
+  correctAnswer: text("correct_answer"),
 });
 
 export const attempts = pgTable("attempts", {
   id: serial("id").primaryKey(),
   examId: integer("exam_id").notNull(),
   studentId: integer("student_id").notNull(),
+  currentPartition: integer("current_partition").notNull().default(1),
   startTime: timestamp("start_time").defaultNow(),
   endTime: timestamp("end_time"),
   score: integer("score"),

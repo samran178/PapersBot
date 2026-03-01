@@ -4,6 +4,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { BookOpen, LogOut, Loader2, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+import logoUrl from "@assets/image_1772344501752.png";
+
 export function Layout({ children }: { children: ReactNode }) {
   const { user, logout, isLoading } = useAuth();
   const [, setLocation] = useLocation();
@@ -26,10 +28,10 @@ export function Layout({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-white/80 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-300">
-              <BookOpen className="w-4 h-4" />
+            <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-300">
+              <img src={logoUrl} alt="PaperBot" className="w-full h-full object-cover" />
             </div>
-            <span className="font-display font-semibold text-lg tracking-tight">Assessio</span>
+            <span className="font-display font-semibold text-lg tracking-tight">PaperBot</span>
           </Link>
 
           {user && (

@@ -114,28 +114,33 @@ export class DatabaseStorage implements IStorage {
     if (!attempt) throw new Error("Attempt not found");
     
     const examQuestions = await db.select().from(questions).where(eq(questions.examId, attempt.examId));
-    
-    let score = 0;
+    const currentPartitionQuestions = examQuestions.filter(q => q.partition === attempt.currentPartition);
+    const maxPartition = Math.max(...examQuestions.map(q => q.partition));
+
+    let scoreIncrement = 0;
     
     await db.transaction(async (tx) => {
       for (const ans of answers) {
-        const q = examQuestions.find(eq => eq.id === ans.questionId);
+        const q = currentPartitionQuestions.find(q => q.id === ans.questionId);
         if (q) {
           await tx.insert(attemptAnswers).values({
             attemptId,
             questionId: ans.questionId,
             answer: ans.answer
           });
-          if (q.correctAnswer === ans.answer) {
-            score += 1;
+          if (q.type === 'mcq' && q.correctAnswer === ans.answer) {
+            scoreIncrement += 1;
           }
         }
       }
       
+      const isFinal = attempt.currentPartition >= maxPartition;
+      
       const [updated] = await tx.update(attempts).set({
-        endTime: new Date(),
-        isCompleted: true,
-        score
+        endTime: isFinal ? new Date() : null,
+        isCompleted: isFinal,
+        currentPartition: isFinal ? attempt.currentPartition : attempt.currentPartition + 1,
+        score: (attempt.score || 0) + scoreIncrement
       }).where(eq(attempts.id, attemptId)).returning();
       
       return updated;

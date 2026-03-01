@@ -4,6 +4,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { BookOpen, ArrowRight, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+import logoUrl from "@assets/image_1772344501752.png";
+
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState("");
@@ -46,15 +48,15 @@ export default function AuthPage() {
         
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-16">
-            <div className="w-10 h-10 rounded-xl bg-white text-zinc-900 flex items-center justify-center shadow-lg">
-              <BookOpen className="w-5 h-5" />
+            <div className="w-12 h-12 rounded-xl bg-white overflow-hidden flex items-center justify-center shadow-lg">
+              <img src={logoUrl} alt="PaperBot" className="w-full h-full object-cover" />
             </div>
-            <span className="font-display font-bold text-2xl tracking-tight">Assessio</span>
+            <span className="font-display font-bold text-2xl tracking-tight">PaperBot</span>
           </div>
           
           <h1 className="font-display text-5xl md:text-6xl font-bold leading-[1.1] tracking-tight mb-6">
-            Assessments,<br/>
-            <span className="text-zinc-400">beautifully simple.</span>
+            Paper Generation,<br/>
+            <span className="text-zinc-400">made intelligent.</span>
           </h1>
           <p className="text-lg text-zinc-400 max-w-md leading-relaxed">
             Create, manage, and take exams in a distraction-free environment designed for focus.

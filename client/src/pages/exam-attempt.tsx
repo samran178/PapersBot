@@ -85,7 +85,7 @@ export default function ExamAttemptPage() {
   const secs = timeLeft !== null ? timeLeft % 60 : 0;
   const isLowTime = timeLeft !== null && timeLeft < 300; // less than 5 mins
 
-  const questions = attempt.exam.questions || [];
+  const questions = (attempt.exam.questions || []).filter(q => q.partition === attempt.currentPartition);
   const answeredCount = Object.keys(answers).length;
   const isComplete = answeredCount === questions.length;
 
@@ -94,7 +94,9 @@ export default function ExamAttemptPage() {
       {/* Sticky Header with Timer */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-border shadow-sm">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <h1 className="font-display font-bold text-lg truncate max-w-[200px] sm:max-w-md">{attempt.exam.title}</h1>
+          <h1 className="font-display font-bold text-lg truncate max-w-[200px] sm:max-w-md">
+            {attempt.exam.title} - Part {attempt.currentPartition}
+          </h1>
           
           <div className="flex items-center gap-4">
             <div className={`flex items-center gap-2 px-4 py-2 rounded-full font-mono text-lg font-bold border transition-colors ${
@@ -113,8 +115,8 @@ export default function ExamAttemptPage() {
                   : 'bg-secondary text-secondary-foreground border border-border hover:bg-secondary/80'
               }`}
             >
-              {submitMutation.isPending ? 'Submitting...' : 'Submit Exam'}
-              <Save className="w-4 h-4" />
+              {submitMutation.isPending ? 'Submitting...' : 'Submit Part'}
+              <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -132,7 +134,7 @@ export default function ExamAttemptPage() {
         {!isComplete && (
           <div className="flex items-center gap-2 text-sm font-medium text-amber-700 bg-amber-50 p-4 rounded-xl border border-amber-200">
             <AlertCircle className="w-4 h-4 shrink-0" />
-            Answer all questions before submitting. ({answeredCount}/{questions.length} completed)
+            Answer all questions in this part before submitting. ({answeredCount}/{questions.length} completed)
           </div>
         )}
 
@@ -146,26 +148,35 @@ export default function ExamAttemptPage() {
             </div>
 
             <div className="space-y-3 pl-12">
-              {q.options.map((opt, oIndex) => (
-                <label 
-                  key={oIndex} 
-                  className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all ${
-                    answers[q.id] === opt 
-                      ? 'border-primary bg-primary/5 ring-1 ring-primary' 
-                      : 'border-border hover:bg-secondary/50'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name={`q-${q.id}`}
-                    value={opt}
-                    checked={answers[q.id] === opt}
-                    onChange={() => setAnswers(prev => ({ ...prev, [q.id]: opt }))}
-                    className="w-5 h-5 text-primary border-border focus:ring-primary"
-                  />
-                  <span className="text-foreground">{opt}</span>
-                </label>
-              ))}
+              {q.type === 'mcq' ? (
+                (q.options || []).map((opt, oIndex) => (
+                  <label 
+                    key={oIndex} 
+                    className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all ${
+                      answers[q.id] === opt 
+                        ? 'border-primary bg-primary/5 ring-1 ring-primary' 
+                        : 'border-border hover:bg-secondary/50'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name={`q-${q.id}`}
+                      value={opt}
+                      checked={answers[q.id] === opt}
+                      onChange={() => setAnswers(prev => ({ ...prev, [q.id]: opt }))}
+                      className="w-5 h-5 text-primary border-border focus:ring-primary"
+                    />
+                    <span className="text-foreground">{opt}</span>
+                  </label>
+                ))
+              ) : (
+                <textarea
+                  className="w-full px-4 py-3 rounded-xl bg-transparent border border-input text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all min-h-[150px] resize-y"
+                  placeholder="Write your answer here..."
+                  value={answers[q.id] || ""}
+                  onChange={(e) => setAnswers(prev => ({ ...prev, [q.id]: e.target.value }))}
+                />
+              )}
             </div>
           </div>
         ))}
@@ -176,7 +187,7 @@ export default function ExamAttemptPage() {
             disabled={submitMutation.isPending}
             className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-xl font-bold bg-primary text-primary-foreground shadow-lg active:scale-95 transition-all"
           >
-            Submit Exam
+            Submit Part
           </button>
         </div>
       </main>

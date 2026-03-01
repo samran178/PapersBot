@@ -17,8 +17,8 @@ export default function CreateExamPage() {
   const [shortCount, setShortCount] = useState(5);
   const [longCount, setLongCount] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [questions, setQuestions] = useState([
-    { text: "", options: ["", "", "", ""], correctAnswer: "" }
+  const [questions, setQuestions] = useState<any[]>([
+    { text: "", type: "mcq", partition: 1, options: ["", "", "", ""], correctAnswer: "" }
   ]);
 
   const createMutation = useCreateExam();
@@ -52,7 +52,7 @@ export default function CreateExamPage() {
   };
 
   const addQuestion = () => {
-    setQuestions([...questions, { text: "", options: ["", "", "", ""], correctAnswer: "" }]);
+    setQuestions([...questions, { text: "", type: "mcq", partition: 1, options: ["", "", "", ""], correctAnswer: "" }]);
   };
 
   const removeQuestion = (index: number) => {
@@ -67,6 +67,7 @@ export default function CreateExamPage() {
 
   const updateOption = (qIndex: number, optIndex: number, value: string) => {
     const newQs = [...questions];
+    if (!newQs[qIndex].options) newQs[qIndex].options = ["", "", "", ""];
     newQs[qIndex].options[optIndex] = value;
     setQuestions(newQs);
   };
@@ -271,45 +272,86 @@ export default function CreateExamPage() {
                   <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center font-bold text-foreground shrink-0 mt-1">
                     {qIndex + 1}
                   </div>
-                  <div className="w-full">
-                    <label className="block text-sm font-medium text-foreground mb-2">Question Text</label>
-                    <textarea 
-                      value={q.text} 
-                      onChange={e => updateQuestion(qIndex, 'text', e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl bg-transparent border border-input text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-y min-h-[80px]"
-                      placeholder="What is the capital of..."
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">Question Text</label>
+                      <textarea 
+                        value={q.text} 
+                        onChange={e => updateQuestion(qIndex, 'text', e.target.value)}
+                        className="w-full px-4 py-3 rounded-xl bg-transparent border border-input text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-y min-h-[80px]"
+                        placeholder="Enter question text..."
+                      />
+                    </div>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold uppercase text-muted-foreground mb-2">Type</label>
+                          <select 
+                            value={q.type}
+                            onChange={e => updateQuestion(qIndex, 'type', e.target.value)}
+                            className="w-full bg-background border border-input rounded-lg px-3 py-2 text-sm"
+                          >
+                            <option value="mcq">MCQ</option>
+                            <option value="short">Short</option>
+                            <option value="long">Long</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold uppercase text-muted-foreground mb-2">Partition</label>
+                          <select 
+                            value={q.partition}
+                            onChange={e => updateQuestion(qIndex, 'partition', parseInt(e.target.value))}
+                            className="w-full bg-background border border-input rounded-lg px-3 py-2 text-sm"
+                          >
+                            <option value={1}>Part 1</option>
+                            <option value={2}>Part 2</option>
+                            <option value={3}>Part 3</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold uppercase text-muted-foreground mb-2">Correct Answer / Guideline</label>
+                        <input 
+                          type="text"
+                          value={q.correctAnswer}
+                          onChange={e => updateQuestion(qIndex, 'correctAnswer', e.target.value)}
+                          className="w-full bg-background border border-input rounded-lg px-3 py-2 text-sm"
+                          placeholder="Correct answer or answer guideline..."
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="pl-12 space-y-3">
-                  <label className="block text-sm font-medium text-foreground mb-3">Options & Correct Answer</label>
-                  {q.options.map((opt, oIndex) => (
-                    <div key={oIndex} className={`flex items-center gap-3 p-2 rounded-xl border transition-all ${q.correctAnswer === opt && opt !== "" ? 'border-emerald-500 bg-emerald-50/50' : 'border-transparent hover:bg-secondary/50'}`}>
-                      <input 
-                        type="radio" 
-                        name={`correct-${qIndex}`} 
-                        checked={q.correctAnswer === opt && opt !== ""}
-                        onChange={() => updateQuestion(qIndex, 'correctAnswer', opt)}
-                        disabled={!opt}
-                        className="w-4 h-4 text-emerald-600 border-border focus:ring-emerald-600 disabled:opacity-50"
-                      />
-                      <input 
-                        type="text" 
-                        value={opt} 
-                        onChange={e => {
-                          updateOption(qIndex, oIndex, e.target.value);
-                          if (q.correctAnswer === opt) {
-                            updateQuestion(qIndex, 'correctAnswer', e.target.value);
-                          }
-                        }}
-                        className="flex-1 bg-transparent border-b border-border/50 focus:border-primary px-2 py-1.5 outline-none transition-colors"
-                        placeholder={`Option ${oIndex + 1}`}
-                      />
-                    </div>
-                  ))}
-                  <p className="text-xs text-muted-foreground mt-2">Fill in the options, then select the radio button next to the correct one.</p>
-                </div>
+                {q.type === 'mcq' && (
+                  <div className="pl-12 space-y-3">
+                    <label className="block text-sm font-medium text-foreground mb-3">Options</label>
+                    {q.options.map((opt: string, oIndex: number) => (
+                      <div key={oIndex} className={`flex items-center gap-3 p-2 rounded-xl border transition-all ${q.correctAnswer === opt && opt !== "" ? 'border-emerald-500 bg-emerald-50/50' : 'border-transparent hover:bg-secondary/50'}`}>
+                        <input 
+                          type="radio" 
+                          name={`correct-${qIndex}`} 
+                          checked={q.correctAnswer === opt && opt !== ""}
+                          onChange={() => updateQuestion(qIndex, 'correctAnswer', opt)}
+                          disabled={!opt}
+                          className="w-4 h-4 text-emerald-600 border-border focus:ring-emerald-600 disabled:opacity-50"
+                        />
+                        <input 
+                          type="text" 
+                          value={opt} 
+                          onChange={e => {
+                            updateOption(qIndex, oIndex, e.target.value);
+                            if (q.correctAnswer === opt) {
+                              updateQuestion(qIndex, 'correctAnswer', e.target.value);
+                            }
+                          }}
+                          className="flex-1 bg-transparent border-b border-border/50 focus:border-primary px-2 py-1.5 outline-none transition-colors"
+                          placeholder={`Option ${oIndex + 1}`}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>
