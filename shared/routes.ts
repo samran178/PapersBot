@@ -119,6 +119,22 @@ export const api = {
         200: examSchema,
         404: errorSchemas.notFound,
       }
+    },
+    generate: {
+      method: 'POST' as const,
+      path: '/api/exams/generate' as const,
+      input: z.object({ text: z.string() }),
+      responses: {
+        200: z.object({
+          title: z.string(),
+          questions: z.array(z.object({
+            text: z.string(),
+            options: z.array(z.string()),
+            correctAnswer: z.string()
+          }))
+        }),
+        400: errorSchemas.validation,
+      }
     }
   },
   attempts: {

@@ -5,6 +5,7 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import session from "express-session";
 import createMemoryStore from "memorystore";
+import { generateExamQuestions } from "./openai";
 
 const MemoryStore = createMemoryStore(session);
 
@@ -128,6 +129,16 @@ export async function registerRoutes(
       res.json(exam);
     } catch (e) {
       res.status(404).json({ message: "Exam not found" });
+    }
+  });
+
+  app.post(api.exams.generate.path, requireAuth, async (req, res) => {
+    try {
+      const { text } = api.exams.generate.input.parse(req.body);
+      const generated = await generateExamQuestions(text);
+      res.json(generated);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
     }
   });
 

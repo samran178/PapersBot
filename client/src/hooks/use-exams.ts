@@ -69,3 +69,21 @@ export function usePublishExam() {
     },
   });
 }
+
+export function useGenerateExam() {
+  return useMutation({
+    mutationFn: async (text: string) => {
+      const res = await fetch(api.exams.generate.path, {
+        method: api.exams.generate.method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to generate exam");
+      }
+      return api.exams.generate.responses[200].parse(await res.json());
+    },
+  });
+}

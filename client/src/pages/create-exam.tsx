@@ -1,22 +1,45 @@
 import { useState } from "react";
 import { Layout } from "@/components/layout";
-import { useCreateExam } from "@/hooks/use-exams";
+import { useCreateExam, useGenerateExam } from "@/hooks/use-exams";
 import { useLocation } from "wouter";
-import { Plus, Trash2, ArrowLeft, Save } from "lucide-react";
+import { Plus, Trash2, ArrowLeft, Save, Sparkles, FileText, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
+import { Button } from "@/components/ui/button";
 
 export default function CreateExamPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [durationMinutes, setDurationMinutes] = useState(30);
+  const [aiInput, setAiInput] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
   const [questions, setQuestions] = useState([
     { text: "", options: ["", "", "", ""], correctAnswer: "" }
   ]);
 
   const createMutation = useCreateExam();
+  const generateMutation = useGenerateExam();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+
+  const handleGenerate = async () => {
+    if (!aiInput) {
+      toast({ variant: "destructive", title: "Please provide some text or material" });
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const result = await generateMutation.mutateAsync(aiInput);
+      setTitle(result.title);
+      setQuestions(result.questions);
+      toast({ title: "Exam generated successfully!" });
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Generation failed", description: err.message });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const addQuestion = () => {
     setQuestions([...questions, { text: "", options: ["", "", "", ""], correctAnswer: "" }]);
@@ -78,6 +101,43 @@ export default function CreateExamPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
+          {/* AI Generation Section */}
+          <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6 sm:p-8 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="w-5 h-5 text-primary" />
+              <h2 className="text-xl font-bold font-display">Generate with AI</h2>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Paste your study material, lecture notes, or any text below and AI will automatically create the title and questions for you.
+            </p>
+            <div className="space-y-4">
+              <textarea 
+                value={aiInput} 
+                onChange={e => setAiInput(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl bg-background border border-input text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all min-h-[120px] resize-y"
+                placeholder="Paste material here (e.g. Newton's laws of motion, historical events, etc.)..."
+              />
+              <Button 
+                type="button" 
+                onClick={handleGenerate}
+                disabled={isGenerating}
+                className="w-full sm:w-auto"
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Generate Exam Questions
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+
           {/* General Details */}
           <div className="bg-card border border-border rounded-2xl p-6 sm:p-8 shadow-sm">
             <h2 className="text-xl font-bold font-display mb-6">General Details</h2>
