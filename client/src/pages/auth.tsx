@@ -64,12 +64,14 @@ export default function AuthPage() {
         </div>
 
         <div className="relative z-10 space-y-4">
-          {["Clean, distraction-free interface", "Real-time attempt tracking", "Instant auto-grading"].map((feature, i) => (
-            <div key={i} className="flex items-center gap-3 text-zinc-300">
-              <CheckCircle2 className="w-5 h-5 text-zinc-500" />
-              <span>{feature}</span>
-            </div>
-          ))}
+          <div className="flex items-center gap-3 text-zinc-300">
+            <CheckCircle2 className="w-5 h-5 text-zinc-500" />
+            <span>This project is developed under University of Gujrat</span>
+          </div>
+          <div className="flex items-center gap-3 text-zinc-300">
+            <CheckCircle2 className="w-5 h-5 text-zinc-500" />
+            <span>Developed by Samran Taimoor | Arzoo Fatima</span>
+          </div>
         </div>
       </div>
 
