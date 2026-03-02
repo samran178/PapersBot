@@ -97,7 +97,7 @@ export default function AuthPage() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl bg-transparent border border-input text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
-                  placeholder="e.g. jsmith"
+                  placeholder="e.g. Muhammad"
                 />
               </div>
               <div className="space-y-2">
