@@ -2,12 +2,11 @@
 
 ## Overview
 
-PaperBot is a web-based exam management platform that allows teachers to create, manage, and publish exams, and students to attempt them. Key features include:
+PaperBot is a web-based exam management platform for University of Gujrat, developed by Samran Taimoor | Arzoo Fatima. It allows teachers to create and publish exams, and students to attempt them online.
 
-- **Teacher side**: Create exams with multiple question types (MCQ, short, long), AI-assisted question generation from uploaded documents or text, publish/unpublish exams, and view student attempt results.
-- **Student side**: Browse published exams, attempt them with a countdown timer, submit answers, and view results with scores.
-- **AI Integration**: OpenAI-powered question generation from pasted text or uploaded PDF files.
-- The app is branded as "PaperBot" and targets educational institutions.
+- **Teacher side**: Create exams with MCQ/short/long questions, AI-assisted generation from PDF or text, publish/unpublish, view student results.
+- **Student side**: Browse published exams, attempt with countdown timer, view scored results.
+- **AI Integration**: OpenAI GPT-4o powered question generation.
 
 ## User Preferences
 
@@ -15,88 +14,105 @@ Preferred communication style: Simple, everyday language.
 
 ## System Architecture
 
-### Frontend Architecture
+### Frontend (unchanged from original)
 
-- **Framework**: React (with Vite as the build tool), TypeScript, no SSR (`rsc: false`)
-- **Routing**: `wouter` for client-side routing with protected routes based on user role (`teacher` or `student`)
-- **State & Data Fetching**: TanStack React Query for server state, with custom hooks (`use-auth`, `use-exams`, `use-attempts`) wrapping fetch calls
-- **UI Components**: shadcn/ui (New York style) built on Radix UI primitives, styled with Tailwind CSS
-- **Design Tokens**: CSS custom properties for a "Professional Education" theme — deep navy + soft nude/cream palette
-- **Fonts**: Inter (body), Outfit (display/headings), loaded from Google Fonts
-- **Forms**: React Hook Form with Zod resolvers
-- **Path Aliases**: `@/` maps to `client/src/`, `@shared/` maps to `shared/`
+- **Framework**: React + Vite, TypeScript
+- **Routing**: `wouter` with protected routes (teacher/student roles)
+- **State**: TanStack React Query
+- **UI**: shadcn/ui + Radix UI + Tailwind CSS
+- **Forms**: React Hook Form + Zod
+- **Build output**: `dist/public/` (served by Django)
 
-### Backend Architecture
+### Backend — Python / Django
 
-- **Framework**: Express.js (TypeScript, ESM), served via `tsx` in development and bundled with esbuild for production
-- **Entry point**: `server/index.ts` → registers routes and serves static files
-- **API Routes**: Defined in `server/routes.ts`, using route contracts from `shared/routes.ts` (Zod schemas for inputs/outputs)
-- **Session Management**: `express-session` with `memorystore` (in-memory, suitable for development; should be replaced with a persistent store for production scale)
-- **Authentication**: Session-based auth — userId stored in session after login. `requireAuth` middleware guards protected endpoints.
-- **File Uploads**: `multer` with in-memory storage for PDF uploads
-- **PDF Parsing**: `pdf-parse` used to extract text from uploaded PDFs for AI question generation
-- **Storage Layer**: `server/storage.ts` defines `IStorage` interface and `DatabaseStorage` class that wraps Drizzle ORM queries
-- **Build**: esbuild bundles the server; key dependencies (OpenAI, express, pg, etc.) are bundled, others are externalized
+The backend was migrated from Node.js/Express to Python/Django to integrate with the broader FYP stack (Python + Django + PostgreSQL + React).
 
-### Data Storage
+- **Framework**: Django 5.x with plain function-based views (no DRF needed)
+- **Entry point**: `manage.py` → Django development server on port 5000
+- **Project config**: `paperbot/settings.py`, `paperbot/urls.py`
+- **API app**: `api/` — models, views, urls, openai_service
+- **Session auth**: Django built-in `django.contrib.sessions` with DB backend
+- **CORS**: `django-cors-headers` (allow all origins in dev)
+- **PDF parsing**: `pypdf`
+- **AI**: `openai` Python package → GPT-4o
 
-- **Database**: PostgreSQL via `drizzle-orm/node-postgres` using a connection pool
-- **ORM**: Drizzle ORM with schema defined in `shared/schema.ts`
-- **Schema Tables**:
-  - `users` — id, username, password (plaintext currently — should be hashed), role (`teacher`/`student`)
-  - `exams` — id, teacherId, title, description, durationMinutes, isPublished, createdAt
-  - `questions` — id, examId, type (`mcq`/`short`/`long`), partition (int, for modular exams), text, options (JSONB), correctAnswer
-  - `attempts` — id, examId, studentId, currentPartition, startTime, endTime, score, isCompleted, isTimeout
-  - `attemptAnswers` — id, attemptId, questionId, answer
-  - `conversations` / `messages` — for AI chat integration (defined in `shared/models/chat.ts`)
-- **Migrations**: Drizzle Kit manages migrations, output in `./migrations`
-- **Config**: `DATABASE_URL` environment variable required
+### How It Runs
 
-### Authentication & Authorization
+The workflow command is `bash run.sh` which:
+1. Builds the React frontend (`npm run build` → `dist/public/`)
+2. Creates Django migrations (`python manage.py makemigrations api`)
+3. Applies migrations (`python manage.py migrate --fake-initial`)
+4. Starts Django on port 5000
 
-- Session cookie-based authentication (`express-session`)
-- `requireAuth` middleware checks `req.session.userId`
-- Role-based access: frontend `ProtectedRoute` component checks `user.role` and redirects accordingly
-- **Note**: Passwords are currently stored as plaintext — hashing (e.g., bcrypt) should be added
+Django serves both:
+- `/api/*` → REST API endpoints
+- All other routes → `dist/public/index.html` (React SPA)
+- Static assets (`.js`, `.css`, etc.) → files from `dist/public/`
 
-### Shared Contract Layer
+### API Endpoints
 
-- `shared/routes.ts` defines all API endpoints with Zod schemas for inputs and response shapes — used by both client hooks and server routes for type safety
-- `shared/schema.ts` is the single source of truth for DB table definitions and derived TypeScript types
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | /api/auth/register | Register new user |
+| POST | /api/auth/login | Login |
+| POST | /api/auth/logout | Logout |
+| GET | /api/auth/me | Get current user |
+| GET | /api/exams | List all exams |
+| POST | /api/exams | Create exam with questions |
+| POST | /api/exams/generate | AI-generate questions (multipart) |
+| GET | /api/exams/:id | Get exam detail |
+| PATCH | /api/exams/:id | Update exam |
+| DELETE | /api/exams/:id | Delete exam |
+| POST | /api/exams/:id/publish | Publish exam |
+| GET | /api/attempts | List attempts |
+| POST | /api/attempts/start | Start attempt |
+| GET | /api/attempts/:id | Get attempt detail |
+| POST | /api/attempts/:id/submit | Submit answers |
 
-### Replit Integrations (Scaffolding)
+### Database Schema (PostgreSQL)
 
-The repo includes pre-wired Replit AI integration modules that are not yet hooked into the main app routes:
-- `server/replit_integrations/chat/` — OpenAI chat conversations (text)
-- `server/replit_integrations/audio/` — Voice chat (speech-to-text, TTS, streaming PCM16 audio)
-- `server/replit_integrations/image/` — Image generation via gpt-image-1
-- `server/replit_integrations/batch/` — Rate-limited batch processing utilities
-- Client-side audio utilities in `client/replit_integrations/audio/`
+Tables (same names kept from original schema):
+- `users` — id, username, password, role (teacher/student)
+- `exams` — id, teacher_id, title, description, duration_minutes, is_published, created_at
+- `questions` — id, exam_id, type (mcq/short/long), partition, text, options (JSONB), correct_answer
+- `attempts` — id, exam_id, student_id, current_partition, start_time, end_time, score, is_completed, is_timeout
+- `attempt_answers` — id, attempt_id, question_id, answer
 
-These modules use `AI_INTEGRATIONS_OPENAI_API_KEY` and `AI_INTEGRATIONS_OPENAI_BASE_URL` env vars.
+Django also creates:
+- `django_session` — session storage
+- `django_content_type`, `django_migrations` — Django internals
 
-### Timer & Exam Attempt Flow
+### Key Python Files
 
-- Timer is client-side only: initialized from `attempt.exam.durationMinutes * 60` seconds
-- Auto-submission triggers when timer hits 0
-- Modular exam support is partially designed (partition field on questions, currentPartition on attempts) but full modular flow (sequential parts, inter-part breaks) is not yet fully implemented
+| File | Purpose |
+|------|---------|
+| `manage.py` | Django management script |
+| `paperbot/settings.py` | Django configuration |
+| `paperbot/urls.py` | Root URL routing + static file serving |
+| `paperbot/wsgi.py` | WSGI application |
+| `api/models.py` | Django ORM models |
+| `api/views.py` | All API view functions |
+| `api/urls.py` | API URL patterns |
+| `api/openai_service.py` | AI question generation |
+| `run.sh` | Startup script |
+
+### Business Logic
+
+- Score stored as percentage (0–100). 70%+ is passing (shown green).
+- Correct answers are stripped server-side before sending to students.
+- All questions shown at once during attempt (no partition filtering for students).
+- Passwords stored as plaintext (matches original behavior; hash in production).
 
 ## External Dependencies
 
 | Dependency | Purpose |
 |---|---|
-| **PostgreSQL** | Primary relational database (`DATABASE_URL` env var required) |
-| **OpenAI API** (`AI_INTEGRATIONS_OPENAI_API_KEY` + `AI_INTEGRATIONS_OPENAI_BASE_URL`) | AI question generation from text/PDF, also used by chat/audio/image integrations |
-| **Google Fonts** | Inter and Outfit fonts loaded in `index.html` and `index.css` |
-| **Radix UI** | Headless accessible UI primitives (all `@radix-ui/react-*` packages) |
-| **TanStack React Query** | Server state management and caching on the client |
-| **Drizzle ORM + drizzle-kit** | Database ORM and migration tooling |
-| **multer** | File upload handling for PDF AI generation |
-| **pdf-parse** | PDF text extraction |
-| **memorystore** | In-memory session store (dev-appropriate; not durable across restarts) |
-| **express-session** | Server-side session management |
-| **wouter** | Lightweight React client-side router |
-| **date-fns** | Date formatting across UI |
-| **lucide-react** | Icon set |
-| **Vite** | Frontend dev server and bundler |
-| **esbuild** | Server-side production bundler |
+| **PostgreSQL** | Primary database (PGDATABASE, PGUSER, PGPASSWORD, PGHOST, PGPORT env vars) |
+| **OpenAI API** | AI question generation (AI_INTEGRATIONS_OPENAI_API_KEY, AI_INTEGRATIONS_OPENAI_BASE_URL) |
+| **django** | Python web framework |
+| **django-cors-headers** | CORS middleware |
+| **psycopg2-binary** | PostgreSQL driver for Python |
+| **pypdf** | PDF text extraction |
+| **openai** (Python) | OpenAI Python client |
+| **React + Vite** | Frontend framework and bundler |
+| **shadcn/ui + Tailwind** | UI components |
