@@ -1,11 +1,11 @@
 import json
 import io
+import datetime
 from functools import wraps
 
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.db import transaction
-from django.utils import timezone
 
 from .models import User, Exam, Question, Attempt, AttemptAnswer
 from .openai_service import generate_exam_questions
@@ -386,7 +386,7 @@ def attempt_submit(request, attempt_id):
                         correct_count += 1
 
             score = round((correct_count / len(mcq_questions)) * 100) if mcq_questions else 0
-            attempt.end_time = timezone.now()
+            attempt.end_time = datetime.datetime.now()
             attempt.is_completed = True
             attempt.score = score
             attempt.save()

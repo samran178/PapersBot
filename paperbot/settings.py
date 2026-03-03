@@ -57,6 +57,9 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
+USE_TZ = False
+TIME_ZONE = 'UTC'
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 TEMPLATES = [

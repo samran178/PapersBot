@@ -1,7 +1,7 @@
 import { useParams, Link } from "wouter";
 import { useAttempt } from "@/hooks/use-attempts";
 import { Layout } from "@/components/layout";
-import { ArrowLeft, Trophy, CheckCircle, XCircle, Clock } from "lucide-react";
+import { ArrowLeft, Trophy, CheckCircle, XCircle, Clock, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 
 export default function AttemptResultPage() {
