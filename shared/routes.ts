@@ -31,6 +31,8 @@ const examSchema = z.object({
   durationMinutes: z.number(),
   isPublished: z.boolean().nullable(),
   createdAt: z.string().nullable(),
+  availableDays: z.number().nullable().optional(),
+  publishedAt: z.string().nullable().optional(),
   questions: z.array(questionSchema).optional()
 });
 
@@ -118,6 +120,7 @@ export const api = {
       method: 'POST' as const,
       path: '/api/exams' as const,
       input: insertExamSchema.extend({
+        availableDays: z.number().nullable().optional(),
         questions: z.array(z.object({
           text: z.string(),
           type: z.enum(['mcq', 'short', 'long']),
@@ -143,6 +146,7 @@ export const api = {
       method: 'PATCH' as const,
       path: '/api/exams/:id' as const,
       input: insertExamSchema.partial().extend({
+        availableDays: z.number().nullable().optional(),
         questions: z.array(z.object({
           id: z.number().optional(),
           text: z.string(),

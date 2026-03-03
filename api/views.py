@@ -58,9 +58,11 @@ def exam_to_dict(exam, include_questions=False, student_view=False):
         'durationMinutes': exam.duration_minutes,
         'isPublished': exam.is_published,
         'createdAt': exam.created_at.isoformat() if exam.created_at else None,
+        'availableDays': exam.available_days,
+        'publishedAt': exam.published_at.isoformat() if exam.published_at else None,
     }
     if include_questions:
-        questions = list(exam.questions.all())
+        questions = list(exam.questions.all().order_by('partition', 'id'))
         d['questions'] = [question_to_dict(q, include_answer=not student_view) for q in questions]
         d['questionCount'] = len(questions)
     return d
@@ -196,6 +198,7 @@ def exams_list_create(request):
                     description=data.get('description'),
                     duration_minutes=data['durationMinutes'],
                     is_published=data.get('isPublished', False),
+                    available_days=data.get('availableDays') or None,
                 )
                 for q in data.get('questions', []):
                     Question.objects.create(
@@ -265,6 +268,8 @@ def exam_detail(request, exam_id):
                 exam.duration_minutes = data['durationMinutes']
             if 'isPublished' in data:
                 exam.is_published = data['isPublished']
+            if 'availableDays' in data:
+                exam.available_days = data.get('availableDays') or None
 
             with transaction.atomic():
                 exam.save()
@@ -305,6 +310,8 @@ def exam_publish(request, exam_id):
     try:
         exam = Exam.objects.get(id=exam_id)
         exam.is_published = True
+        if not exam.published_at:
+            exam.published_at = datetime.datetime.now()
         exam.save()
         return JsonResponse(exam_to_dict(exam))
     except Exam.DoesNotExist:
@@ -348,6 +355,18 @@ def attempt_start(request):
         data = json.loads(request.body)
         exam_id = data['examId']
         user = get_current_user(request)
+
+        try:
+            exam = Exam.objects.get(id=exam_id)
+        except Exam.DoesNotExist:
+            return JsonResponse({'message': 'Exam not found'}, status=404)
+
+        if exam.available_days and exam.published_at:
+            deadline = exam.published_at + datetime.timedelta(days=exam.available_days)
+            if datetime.datetime.now() > deadline:
+                return JsonResponse({
+                    'message': f'This exam is no longer available. The deadline was {deadline.strftime("%b %d, %Y")}.'
+                }, status=400)
 
         existing = Attempt.objects.filter(
             exam_id=exam_id,

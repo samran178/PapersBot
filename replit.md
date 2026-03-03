@@ -4,9 +4,12 @@
 
 PaperBot is a web-based exam management platform for University of Gujrat, developed by Samran Taimoor | Arzoo Fatima. It allows teachers to create and publish exams, and students to attempt them online.
 
-- **Teacher side**: Create exams with MCQ/short/long questions, AI-assisted generation from PDF or text, publish/unpublish, view student results.
-- **Student side**: Browse published exams, attempt with countdown timer, view scored results.
-- **AI Integration**: OpenAI GPT-4o powered question generation.
+- **Teacher side**: Create exams with MCQ/short/long questions, AI-assisted generation from PDF or text, publish/unpublish, view student results, manually grade subjective answers (with AI grading suggestions).
+- **Student side**: Browse published exams with deadline badges, attempt with countdown timer, view scored results; expired exams listed separately.
+- **AI Integration**: OpenAI GPT-4o powered question generation and subjective answer grading suggestions.
+- **Exam partitions**: Questions organised into Section A/B/C/D on the attempt page by partition (1–4).
+- **Availability window**: `available_days` field on exams; students cannot start after the deadline.
+- **Scoring**: MCQ auto-graded at submission; subjective answers scored by teacher (or AI suggestion); final score = average of all graded answers.
 
 ## User Preferences
 

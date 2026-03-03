@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import { useAttempt, useSubmitAttempt } from "@/hooks/use-attempts";
-import { Clock, AlertCircle, ArrowRight } from "lucide-react";
+import { Clock, AlertCircle, ArrowRight, BookOpen } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function ExamAttemptPage() {
@@ -41,10 +41,10 @@ export default function ExamAttemptPage() {
 
   const handleAutoSubmit = async () => {
     toast({ title: "Time's up!", description: "Submitting your exam automatically." });
-    await handleSubmit();
+    await handleSubmit(true);
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (isTimeout = false) => {
     if (!attempt?.exam) return;
 
     const formattedAnswers = Object.entries(answers).map(([qId, ans]) => ({
@@ -84,11 +84,34 @@ export default function ExamAttemptPage() {
   const secs = timeLeft !== null ? timeLeft % 60 : 0;
   const isLowTime = timeLeft !== null && timeLeft < 300;
 
-  const allQuestions = attempt.exam.questions || [];
+  const rawQuestions = attempt.exam.questions || [];
+
+  const sortedQuestions = [...rawQuestions].sort((a, b) => {
+    if (a.partition !== b.partition) return a.partition - b.partition;
+    return a.id - b.id;
+  });
+
+  const partitionGroups = new Map<number, typeof sortedQuestions>();
+  sortedQuestions.forEach(q => {
+    const part = q.partition ?? 1;
+    if (!partitionGroups.has(part)) partitionGroups.set(part, []);
+    partitionGroups.get(part)!.push(q);
+  });
+
+  const allQuestions = sortedQuestions;
   const answeredCount = Object.keys(answers).filter(qid =>
     allQuestions.some(q => q.id === parseInt(qid))
   ).length;
   const isComplete = answeredCount === allQuestions.length && allQuestions.length > 0;
+
+  const sectionLabels: Record<number, string> = {
+    1: 'Section A',
+    2: 'Section B',
+    3: 'Section C',
+    4: 'Section D',
+  };
+
+  let globalIndex = 0;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -110,7 +133,7 @@ export default function ExamAttemptPage() {
 
             <button
               data-testid="button-submit-exam"
-              onClick={handleSubmit}
+              onClick={() => handleSubmit(false)}
               disabled={submitMutation.isPending}
               className={`hidden sm:flex items-center gap-2 px-5 py-2 rounded-full font-semibold transition-all ${
                 isComplete
@@ -145,56 +168,78 @@ export default function ExamAttemptPage() {
             No questions found for this exam. Please contact your teacher.
           </div>
         ) : (
-          allQuestions.map((q, index) => (
-            <div key={q.id} data-testid={`question-card-${q.id}`} className="bg-card border border-border rounded-2xl p-6 sm:p-8 shadow-sm">
-              <div className="flex gap-4 mb-6">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0">
-                  {index + 1}
+          Array.from(partitionGroups.entries())
+            .sort(([a], [b]) => a - b)
+            .map(([partitionNum, questions]) => (
+              <div key={partitionNum} className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-xl border border-primary/20">
+                    <BookOpen className="w-4 h-4" />
+                    <span className="font-display font-bold text-sm">
+                      {sectionLabels[partitionNum] || `Section ${partitionNum}`}
+                    </span>
+                  </div>
+                  <div className="flex-1 h-px bg-border" />
+                  <span className="text-xs text-muted-foreground font-medium">
+                    {questions.length} question{questions.length !== 1 ? 's' : ''}
+                  </span>
                 </div>
-                <h2 className="text-lg font-medium text-foreground leading-relaxed pt-1">{q.text}</h2>
-              </div>
 
-              <div className="space-y-3 pl-12">
-                {q.type === 'mcq' ? (
-                  (q.options || []).map((opt: string, oIndex: number) => (
-                    <label
-                      key={oIndex}
-                      data-testid={`option-${q.id}-${oIndex}`}
-                      className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all ${
-                        answers[q.id] === opt
-                          ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                          : 'border-border hover:bg-secondary/50'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name={`q-${q.id}`}
-                        value={opt}
-                        checked={answers[q.id] === opt}
-                        onChange={() => setAnswers(prev => ({ ...prev, [q.id]: opt }))}
-                        className="w-5 h-5 text-primary border-border focus:ring-primary"
-                      />
-                      <span className="text-foreground">{opt}</span>
-                    </label>
-                  ))
-                ) : (
-                  <textarea
-                    data-testid={`textarea-answer-${q.id}`}
-                    className="w-full px-4 py-3 rounded-xl bg-transparent border border-input text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all min-h-[150px] resize-y"
-                    placeholder="Write your answer here..."
-                    value={answers[q.id] || ""}
-                    onChange={(e) => setAnswers(prev => ({ ...prev, [q.id]: e.target.value }))}
-                  />
-                )}
+                {questions.map((q) => {
+                  const currentIndex = ++globalIndex;
+                  return (
+                    <div key={q.id} data-testid={`question-card-${q.id}`} className="bg-card border border-border rounded-2xl p-6 sm:p-8 shadow-sm">
+                      <div className="flex gap-4 mb-6">
+                        <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0 text-sm">
+                          {currentIndex}
+                        </div>
+                        <h2 className="text-lg font-medium text-foreground leading-relaxed pt-1">{q.text}</h2>
+                      </div>
+
+                      <div className="space-y-3 pl-12">
+                        {q.type === 'mcq' ? (
+                          (q.options || []).map((opt: string, oIndex: number) => (
+                            <label
+                              key={oIndex}
+                              data-testid={`option-${q.id}-${oIndex}`}
+                              className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all ${
+                                answers[q.id] === opt
+                                  ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                                  : 'border-border hover:bg-secondary/50'
+                              }`}
+                            >
+                              <input
+                                type="radio"
+                                name={`q-${q.id}`}
+                                value={opt}
+                                checked={answers[q.id] === opt}
+                                onChange={() => setAnswers(prev => ({ ...prev, [q.id]: opt }))}
+                                className="w-5 h-5 text-primary border-border focus:ring-primary"
+                              />
+                              <span className="text-foreground">{opt}</span>
+                            </label>
+                          ))
+                        ) : (
+                          <textarea
+                            data-testid={`textarea-answer-${q.id}`}
+                            className="w-full px-4 py-3 rounded-xl bg-transparent border border-input text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all min-h-[150px] resize-y"
+                            placeholder="Write your answer here..."
+                            value={answers[q.id] || ""}
+                            onChange={(e) => setAnswers(prev => ({ ...prev, [q.id]: e.target.value }))}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            </div>
-          ))
+            ))
         )}
 
         <div className="pt-8 pb-20 flex justify-center sm:hidden">
           <button
             data-testid="button-submit-exam-mobile"
-            onClick={handleSubmit}
+            onClick={() => handleSubmit(false)}
             disabled={submitMutation.isPending}
             className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-xl font-bold bg-primary text-primary-foreground shadow-lg active:scale-95 transition-all"
           >

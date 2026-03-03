@@ -17,6 +17,7 @@ export default function CreateExamPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [durationMinutes, setDurationMinutes] = useState(30);
+  const [availableDays, setAvailableDays] = useState(0);
   const [aiInput, setAiInput] = useState("");
   const [aiFile, setAiFile] = useState<File | null>(null);
   const [difficulty, setDifficulty] = useState("medium");
@@ -59,10 +60,11 @@ export default function CreateExamPage() {
       setTitle(existingExam.title);
       setDescription(existingExam.description || "");
       setDurationMinutes(existingExam.durationMinutes);
+      setAvailableDays(existingExam.availableDays || 0);
       if (existingExam.questions && existingExam.questions.length > 0) {
         setQuestions(existingExam.questions.map((q: any) => ({
           ...q,
-          options: q.options || ["", "", "", ""]
+          options: q.options && q.options.length > 0 ? q.options : ["", "", "", ""]
         })));
       }
     }
@@ -145,6 +147,7 @@ export default function CreateExamPage() {
           title,
           description,
           durationMinutes,
+          availableDays: availableDays > 0 ? availableDays : null,
           questions
         });
       } else {
@@ -152,6 +155,7 @@ export default function CreateExamPage() {
           title,
           description,
           durationMinutes,
+          availableDays: availableDays > 0 ? availableDays : null,
           questions
         });
         toast({ title: "Exam created successfully" });
@@ -302,15 +306,31 @@ export default function CreateExamPage() {
                   placeholder="Instructions for students..."
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Duration (minutes)</label>
-                <input 
-                  type="number" 
-                  min="1"
-                  value={durationMinutes} 
-                  onChange={e => setDurationMinutes(parseInt(e.target.value) || 30)}
-                  className="w-full sm:w-48 px-4 py-3 rounded-xl bg-transparent border border-input text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">Duration (minutes)</label>
+                  <input 
+                    type="number" 
+                    min="1"
+                    value={durationMinutes} 
+                    onChange={e => setDurationMinutes(parseInt(e.target.value) || 30)}
+                    className="w-full px-4 py-3 rounded-xl bg-transparent border border-input text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Time limit once a student starts the exam.</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">Available for (days)</label>
+                  <input 
+                    type="number"
+                    min="0"
+                    value={availableDays}
+                    onChange={e => setAvailableDays(parseInt(e.target.value) || 0)}
+                    className="w-full px-4 py-3 rounded-xl bg-transparent border border-input text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    placeholder="0"
+                    data-testid="input-available-days"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Days students can start after publishing. 0 = no deadline.</p>
+                </div>
               </div>
             </div>
           </div>

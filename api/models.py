@@ -17,6 +17,8 @@ class Exam(models.Model):
     duration_minutes = models.IntegerField()
     is_published = models.BooleanField(default=False, null=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
+    available_days = models.IntegerField(null=True, blank=True)
+    published_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = 'exams'
