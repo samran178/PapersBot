@@ -8,7 +8,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.db import transaction
 
 from .models import User, Exam, Question, Attempt, AttemptAnswer
-from .openai_service import generate_exam_questions
+from .openai_service import generate_exam_questions, grade_subjective_answer
 
 
 def require_auth(view_func):
@@ -66,7 +66,19 @@ def exam_to_dict(exam, include_questions=False, student_view=False):
     return d
 
 
-def attempt_to_dict(attempt, include_exam=False, student_view=False):
+def answer_to_dict(ans, include_answer=True):
+    return {
+        'id': ans.id,
+        'questionId': ans.question_id,
+        'answer': ans.answer,
+        'marks': ans.marks,
+        'aiSuggestedMarks': ans.ai_suggested_marks,
+        'aiFeedback': ans.ai_feedback,
+        'question': question_to_dict(ans.question, include_answer=include_answer),
+    }
+
+
+def attempt_to_dict(attempt, include_exam=False, student_view=False, include_answers=False):
     d = {
         'id': attempt.id,
         'examId': attempt.exam_id,
@@ -80,7 +92,18 @@ def attempt_to_dict(attempt, include_exam=False, student_view=False):
     }
     if include_exam:
         d['exam'] = exam_to_dict(attempt.exam, include_questions=True, student_view=student_view)
+    if include_answers:
+        answers = list(AttemptAnswer.objects.filter(attempt=attempt).select_related('question'))
+        d['answers'] = [answer_to_dict(a, include_answer=not student_view) for a in answers]
     return d
+
+
+def recalculate_attempt_score(attempt):
+    all_answers = list(AttemptAnswer.objects.filter(attempt=attempt))
+    graded = [a for a in all_answers if a.marks is not None]
+    if not graded:
+        return attempt.score or 0
+    return round(sum(a.marks for a in graded) / len(graded))
 
 
 # ─── Auth Views ───────────────────────────────────────────────────────────────
@@ -351,7 +374,13 @@ def attempt_detail(request, attempt_id):
     if request.method == 'GET':
         user = get_current_user(request)
         student_view = user.role == 'student'
-        return JsonResponse(attempt_to_dict(attempt, include_exam=True, student_view=student_view))
+        include_answers = user.role == 'teacher'
+        return JsonResponse(attempt_to_dict(
+            attempt,
+            include_exam=True,
+            student_view=student_view,
+            include_answers=include_answers,
+        ))
 
     return JsonResponse({'message': 'Method not allowed'}, status=405)
 
@@ -366,10 +395,9 @@ def attempt_submit(request, attempt_id):
 
         attempt = Attempt.objects.get(id=attempt_id)
         all_questions = list(Question.objects.filter(exam_id=attempt.exam_id))
-        mcq_questions = [q for q in all_questions if q.type == 'mcq']
         question_map = {q.id: q for q in all_questions}
 
-        correct_count = 0
+        answer_marks = []
 
         with transaction.atomic():
             for ans in answers:
@@ -377,15 +405,21 @@ def attempt_submit(request, attempt_id):
                 answer_text = ans['answer']
                 q = question_map.get(question_id)
                 if q:
+                    if q.type == 'mcq':
+                        marks = 100 if q.correct_answer == answer_text else 0
+                    else:
+                        marks = None
                     AttemptAnswer.objects.create(
                         attempt=attempt,
                         question_id=question_id,
                         answer=answer_text,
+                        marks=marks,
                     )
-                    if q.type == 'mcq' and q.correct_answer == answer_text:
-                        correct_count += 1
+                    answer_marks.append(marks)
 
-            score = round((correct_count / len(mcq_questions)) * 100) if mcq_questions else 0
+            graded = [m for m in answer_marks if m is not None]
+            score = round(sum(graded) / len(graded)) if graded else 0
+
             attempt.end_time = datetime.datetime.now()
             attempt.is_completed = True
             attempt.score = score
@@ -393,6 +427,67 @@ def attempt_submit(request, attempt_id):
 
         attempt.refresh_from_db()
         return JsonResponse(attempt_to_dict(attempt))
+    except Attempt.DoesNotExist:
+        return JsonResponse({'message': 'Attempt not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'message': str(e)}, status=400)
+
+
+@require_auth
+def attempt_ai_grade(request, attempt_id):
+    if request.method != 'POST':
+        return JsonResponse({'message': 'Method not allowed'}, status=405)
+    try:
+        attempt = Attempt.objects.select_related('exam', 'student').get(id=attempt_id)
+        answers = list(AttemptAnswer.objects.filter(attempt=attempt).select_related('question'))
+
+        subjective_answers = [a for a in answers if a.question.type in ('short', 'long')]
+
+        if not subjective_answers:
+            return JsonResponse({'message': 'No subjective answers to grade'}, status=400)
+
+        with transaction.atomic():
+            for ans in subjective_answers:
+                guideline = ans.question.correct_answer or ''
+                result = grade_subjective_answer(ans.question.text, guideline, ans.answer)
+                ans.ai_suggested_marks = result['score']
+                ans.ai_feedback = result['feedback']
+                ans.save(update_fields=['ai_suggested_marks', 'ai_feedback'])
+
+        attempt.refresh_from_db()
+        return JsonResponse(attempt_to_dict(attempt, include_exam=True, include_answers=True))
+    except Attempt.DoesNotExist:
+        return JsonResponse({'message': 'Attempt not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'message': str(e)}, status=400)
+
+
+@require_auth
+def attempt_grade(request, attempt_id):
+    if request.method != 'POST':
+        return JsonResponse({'message': 'Method not allowed'}, status=405)
+    try:
+        data = json.loads(request.body)
+        grades = data.get('grades', [])
+
+        attempt = Attempt.objects.select_related('exam', 'student').get(id=attempt_id)
+
+        with transaction.atomic():
+            for grade in grades:
+                question_id = grade['questionId']
+                marks = int(grade['marks'])
+                marks = max(0, min(100, marks))
+                AttemptAnswer.objects.filter(
+                    attempt=attempt,
+                    question_id=question_id,
+                ).update(marks=marks)
+
+            score = recalculate_attempt_score(attempt)
+            attempt.score = score
+            attempt.save(update_fields=['score'])
+
+        attempt.refresh_from_db()
+        return JsonResponse(attempt_to_dict(attempt, include_exam=True, include_answers=True))
     except Attempt.DoesNotExist:
         return JsonResponse({'message': 'Attempt not found'}, status=404)
     except Exception as e:

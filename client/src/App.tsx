@@ -11,6 +11,7 @@ import AuthPage from "@/pages/auth";
 import TeacherDashboard from "@/pages/teacher-dashboard";
 import CreateExamPage from "@/pages/create-exam";
 import ExamDetailsPage from "@/pages/exam-details";
+import GradeAttemptPage from "@/pages/grade-attempt";
 import StudentDashboard from "@/pages/student-dashboard";
 import ExamAttemptPage from "@/pages/exam-attempt";
 import AttemptResultPage from "@/pages/attempt-result";
@@ -58,6 +59,9 @@ function Router() {
       </Route>
       <Route path="/teacher/exam/:id">
         {() => <ProtectedRoute component={ExamDetailsPage} allowedRole="teacher" />}
+      </Route>
+      <Route path="/teacher/attempt/:id/grade">
+        {() => <ProtectedRoute component={GradeAttemptPage} allowedRole="teacher" />}
       </Route>
 
       {/* Student Routes */}

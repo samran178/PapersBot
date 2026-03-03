@@ -52,6 +52,9 @@ class AttemptAnswer(models.Model):
     attempt = models.ForeignKey(Attempt, on_delete=models.CASCADE, related_name='answers')
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
     answer = models.TextField()
+    marks = models.IntegerField(null=True, blank=True)
+    ai_suggested_marks = models.IntegerField(null=True, blank=True)
+    ai_feedback = models.TextField(null=True, blank=True)
 
     class Meta:
         db_table = 'attempt_answers'

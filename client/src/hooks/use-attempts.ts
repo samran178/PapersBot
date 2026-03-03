@@ -72,3 +72,48 @@ export function useSubmitAttempt() {
     },
   });
 }
+
+export function useAiGradeAttempt() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const url = buildUrl(api.attempts.aiGrade.path, { id });
+      const res = await fetch(url, {
+        method: api.attempts.aiGrade.method,
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "AI grading failed");
+      }
+      return api.attempts.aiGrade.responses[200].parse(await res.json());
+    },
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: [api.attempts.get.path, id] });
+    },
+  });
+}
+
+export function useGradeAttempt() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: z.infer<typeof api.attempts.grade.input> }) => {
+      const url = buildUrl(api.attempts.grade.path, { id });
+      const res = await fetch(url, {
+        method: api.attempts.grade.method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to save marks");
+      }
+      return api.attempts.grade.responses[200].parse(await res.json());
+    },
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: [api.attempts.list.path] });
+      queryClient.invalidateQueries({ queryKey: [api.attempts.get.path, id] });
+    },
+  });
+}

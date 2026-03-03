@@ -2,7 +2,7 @@ import { useParams, Link } from "wouter";
 import { useExam, usePublishExam } from "@/hooks/use-exams";
 import { useAttempts } from "@/hooks/use-attempts";
 import { Layout } from "@/components/layout";
-import { ArrowLeft, Clock, FileText, Globe, Lock, Trophy, Users, CheckCircle } from "lucide-react";
+import { ArrowLeft, Clock, FileText, Globe, Lock, Trophy, Users, CheckCircle, PenLine, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 
 export default function ExamDetailsPage() {
@@ -100,13 +100,14 @@ export default function ExamDetailsPage() {
                   <tr>
                     <th className="px-6 py-4 font-medium">Student</th>
                     <th className="px-6 py-4 font-medium">Status</th>
-                    <th className="px-6 py-4 font-medium">Started At</th>
+                    <th className="px-6 py-4 font-medium">Submitted At</th>
                     <th className="px-6 py-4 font-medium text-right">Score</th>
+                    <th className="px-6 py-4 font-medium text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/60">
                   {examAttempts.map(attempt => (
-                    <tr key={attempt.id} className="hover:bg-secondary/20 transition-colors">
+                    <tr key={attempt.id} data-testid={`row-attempt-${attempt.id}`} className="hover:bg-secondary/20 transition-colors">
                       <td className="px-6 py-4 font-medium text-foreground capitalize">
                         {attempt.student?.username || `User #${attempt.studentId}`}
                       </td>
@@ -122,10 +123,25 @@ export default function ExamDetailsPage() {
                         )}
                       </td>
                       <td className="px-6 py-4 text-muted-foreground">
-                        {attempt.startTime ? format(new Date(attempt.startTime), 'MMM d, yyyy h:mm a') : '-'}
+                        {attempt.endTime
+                          ? format(new Date(attempt.endTime), 'MMM d, yyyy h:mm a')
+                          : attempt.startTime
+                            ? format(new Date(attempt.startTime), 'MMM d, yyyy h:mm a')
+                            : '-'}
                       </td>
                       <td className="px-6 py-4 text-right font-semibold">
                         {attempt.score !== null ? `${Math.round(attempt.score)}%` : '-'}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        {attempt.isCompleted && (
+                          <Link
+                            href={`/teacher/attempt/${attempt.id}/grade`}
+                            data-testid={`link-grade-${attempt.id}`}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                          >
+                            <PenLine className="w-3 h-3" /> Grade
+                          </Link>
+                        )}
                       </td>
                     </tr>
                   ))}

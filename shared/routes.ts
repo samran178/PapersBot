@@ -20,7 +20,7 @@ const questionSchema = z.object({
   partition: z.number(),
   text: z.string(),
   options: z.array(z.string()).nullable().optional().default([]),
-  correctAnswer: z.string().optional() // Hidden from students unless completed
+  correctAnswer: z.string().optional()
 });
 
 const examSchema = z.object({
@@ -34,6 +34,16 @@ const examSchema = z.object({
   questions: z.array(questionSchema).optional()
 });
 
+const answerSchema = z.object({
+  id: z.number(),
+  questionId: z.number(),
+  answer: z.string(),
+  marks: z.number().nullable(),
+  aiSuggestedMarks: z.number().nullable(),
+  aiFeedback: z.string().nullable(),
+  question: questionSchema.optional(),
+});
+
 const attemptSchema = z.object({
   id: z.number(),
   examId: z.number(),
@@ -45,8 +55,12 @@ const attemptSchema = z.object({
   isCompleted: z.boolean().nullable(),
   isTimeout: z.boolean().nullable(),
   exam: examSchema.optional(),
-  student: userSchema.optional()
+  student: userSchema.optional(),
+  answers: z.array(answerSchema).optional(),
 });
+
+export type Answer = z.infer<typeof answerSchema>;
+export type Attempt = z.infer<typeof attemptSchema>;
 
 export const api = {
   auth: {
@@ -206,6 +220,28 @@ export const api = {
         answers: z.array(z.object({
           questionId: z.number(),
           answer: z.string()
+        }))
+      }),
+      responses: {
+        200: attemptSchema,
+        400: errorSchemas.validation,
+      }
+    },
+    aiGrade: {
+      method: 'POST' as const,
+      path: '/api/attempts/:id/ai-grade' as const,
+      responses: {
+        200: attemptSchema,
+        400: errorSchemas.validation,
+      }
+    },
+    grade: {
+      method: 'POST' as const,
+      path: '/api/attempts/:id/grade' as const,
+      input: z.object({
+        grades: z.array(z.object({
+          questionId: z.number(),
+          marks: z.number().min(0).max(100),
         }))
       }),
       responses: {
