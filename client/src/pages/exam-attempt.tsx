@@ -25,6 +25,8 @@ export default function ExamAttemptPage() {
   const [nextPartition, setNextPartition] = useState<number | null>(null);
   const [justSubmittedPartition, setJustSubmittedPartition] = useState<number | null>(null);
   const timeoutFired = useRef(false);
+  // Only true after the timer was initialised with a positive value and has been counting
+  const timerEverPositive = useRef(false);
 
   // Initialise timer from attempt start time
   useEffect(() => {
@@ -32,12 +34,14 @@ export default function ExamAttemptPage() {
     const totalSecs = attempt.exam.durationMinutes * 60;
     const elapsed = Math.floor((Date.now() - new Date(attempt.startTime).getTime()) / 1000);
     const remaining = Math.max(0, totalSecs - elapsed);
+    if (remaining > 0) {
+      timerEverPositive.current = true;
+    }
     setTimeLeft(remaining);
-    // Reset answers when partition changes (resume scenario)
     setAnswers({});
   }, [attempt?.currentPartition, attempt?.exam?.durationMinutes]);
 
-  // Countdown tick
+  // Countdown tick — only starts when timeLeft transitions from null to a positive number
   useEffect(() => {
     if (timeLeft === null || timeLeft <= 0) return;
     const timer = setInterval(() => {
@@ -52,9 +56,15 @@ export default function ExamAttemptPage() {
     return () => clearInterval(timer);
   }, [timeLeft !== null]);
 
-  // Auto-submit on timeout
+  // Auto-submit only when the countdown actually reaches zero — NOT on initial load
   useEffect(() => {
-    if (timeLeft !== 0 || timeoutFired.current || !attempt || attempt.isCompleted) return;
+    if (
+      timeLeft !== 0 ||
+      !timerEverPositive.current ||   // guard: timer must have been positive first
+      timeoutFired.current ||
+      !attempt ||
+      attempt.isCompleted
+    ) return;
     timeoutFired.current = true;
     handleSubmitPartition(true);
   }, [timeLeft]);
