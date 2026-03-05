@@ -24,12 +24,12 @@ class Migration(migrations.Migration):
             database_operations=[
                 migrations.RunSQL(
                     sql="""
-                        ALTER TABLE api_exam ADD COLUMN IF NOT EXISTS available_days INTEGER NULL;
-                        ALTER TABLE api_exam ADD COLUMN IF NOT EXISTS published_at TIMESTAMP WITH TIME ZONE NULL;
+                        ALTER TABLE exams ADD COLUMN IF NOT EXISTS available_days INTEGER NULL;
+                        ALTER TABLE exams ADD COLUMN IF NOT EXISTS published_at TIMESTAMP WITH TIME ZONE NULL;
                     """,
                     reverse_sql="""
-                        ALTER TABLE api_exam DROP COLUMN IF EXISTS available_days;
-                        ALTER TABLE api_exam DROP COLUMN IF EXISTS published_at;
+                        ALTER TABLE exams DROP COLUMN IF EXISTS available_days;
+                        ALTER TABLE exams DROP COLUMN IF EXISTS published_at;
                     """,
                 ),
             ],

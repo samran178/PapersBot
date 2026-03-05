@@ -29,14 +29,14 @@ class Migration(migrations.Migration):
             database_operations=[
                 migrations.RunSQL(
                     sql="""
-                        ALTER TABLE api_attemptanswer ADD COLUMN IF NOT EXISTS ai_feedback TEXT NULL;
-                        ALTER TABLE api_attemptanswer ADD COLUMN IF NOT EXISTS ai_suggested_marks INTEGER NULL;
-                        ALTER TABLE api_attemptanswer ADD COLUMN IF NOT EXISTS marks INTEGER NULL;
+                        ALTER TABLE attempt_answers ADD COLUMN IF NOT EXISTS ai_feedback TEXT NULL;
+                        ALTER TABLE attempt_answers ADD COLUMN IF NOT EXISTS ai_suggested_marks INTEGER NULL;
+                        ALTER TABLE attempt_answers ADD COLUMN IF NOT EXISTS marks INTEGER NULL;
                     """,
                     reverse_sql="""
-                        ALTER TABLE api_attemptanswer DROP COLUMN IF EXISTS ai_feedback;
-                        ALTER TABLE api_attemptanswer DROP COLUMN IF EXISTS ai_suggested_marks;
-                        ALTER TABLE api_attemptanswer DROP COLUMN IF EXISTS marks;
+                        ALTER TABLE attempt_answers DROP COLUMN IF EXISTS ai_feedback;
+                        ALTER TABLE attempt_answers DROP COLUMN IF EXISTS ai_suggested_marks;
+                        ALTER TABLE attempt_answers DROP COLUMN IF EXISTS marks;
                     """,
                 ),
             ],
