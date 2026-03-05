@@ -231,6 +231,21 @@ export const api = {
         400: errorSchemas.validation,
       }
     },
+    submitPartition: {
+      method: 'POST' as const,
+      path: '/api/attempts/:id/submit-partition' as const,
+      input: z.object({
+        answers: z.array(z.object({
+          questionId: z.number(),
+          answer: z.string()
+        })),
+        isTimeout: z.boolean().optional(),
+      }),
+      responses: {
+        200: attemptSchema,
+        400: errorSchemas.validation,
+      }
+    },
     aiGrade: {
       method: 'POST' as const,
       path: '/api/attempts/:id/ai-grade' as const,

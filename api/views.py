@@ -453,6 +453,71 @@ def attempt_submit(request, attempt_id):
 
 
 @require_auth
+def attempt_submit_partition(request, attempt_id):
+    if request.method != 'POST':
+        return JsonResponse({'message': 'Method not allowed'}, status=405)
+    try:
+        data = json.loads(request.body)
+        answers = data.get('answers', [])
+
+        attempt = Attempt.objects.select_related('exam').get(id=attempt_id)
+        if attempt.is_completed:
+            return JsonResponse({'message': 'Attempt already completed'}, status=400)
+
+        current_partition = attempt.current_partition
+
+        partition_questions = list(Question.objects.filter(
+            exam_id=attempt.exam_id,
+            partition=current_partition,
+        ))
+        question_map = {q.id: q for q in partition_questions}
+
+        all_partitions = sorted(
+            Question.objects.filter(exam_id=attempt.exam_id)
+            .values_list('partition', flat=True)
+            .distinct()
+        )
+
+        is_timeout = data.get('isTimeout', False)
+        is_last_partition = is_timeout or (not all_partitions) or (current_partition >= max(all_partitions))
+
+        with transaction.atomic():
+            for ans in answers:
+                question_id = ans['questionId']
+                answer_text = ans.get('answer', '')
+                q = question_map.get(question_id)
+                if q:
+                    marks = 100 if (q.type == 'mcq' and q.correct_answer == answer_text) else (0 if q.type == 'mcq' else None)
+                    AttemptAnswer.objects.create(
+                        attempt=attempt,
+                        question_id=question_id,
+                        answer=answer_text,
+                        marks=marks,
+                    )
+
+            if is_last_partition:
+                all_answers = list(AttemptAnswer.objects.filter(attempt=attempt))
+                graded = [a for a in all_answers if a.marks is not None]
+                score = round(sum(a.marks for a in graded) / len(graded)) if graded else None
+                attempt.end_time = datetime.datetime.now()
+                attempt.is_completed = True
+                attempt.score = score
+                attempt.save()
+            else:
+                current_idx = all_partitions.index(current_partition)
+                next_partition = all_partitions[current_idx + 1]
+                attempt.current_partition = next_partition
+                attempt.save(update_fields=['current_partition'])
+
+        attempt.refresh_from_db()
+        return JsonResponse(attempt_to_dict(attempt))
+    except Attempt.DoesNotExist:
+        return JsonResponse({'message': 'Attempt not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'message': str(e)}, status=400)
+
+
+@require_auth
 def attempt_ai_grade(request, attempt_id):
     if request.method != 'POST':
         return JsonResponse({'message': 'Method not allowed'}, status=405)

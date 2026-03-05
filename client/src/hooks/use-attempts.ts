@@ -73,6 +73,30 @@ export function useSubmitAttempt() {
   });
 }
 
+export function useSubmitPartition() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: z.infer<typeof api.attempts.submitPartition.input> }) => {
+      const url = buildUrl(api.attempts.submitPartition.path, { id });
+      const res = await fetch(url, {
+        method: api.attempts.submitPartition.method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to submit part");
+      }
+      return api.attempts.submitPartition.responses[200].parse(await res.json());
+    },
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: [api.attempts.list.path] });
+      queryClient.invalidateQueries({ queryKey: [api.attempts.get.path, id] });
+    },
+  });
+}
+
 export function useAiGradeAttempt() {
   const queryClient = useQueryClient();
   return useMutation({

@@ -15,6 +15,7 @@ urlpatterns = [
     path('attempts', views.attempts_list),
     path('attempts/start', views.attempt_start),
     path('attempts/<int:attempt_id>/submit', views.attempt_submit),
+    path('attempts/<int:attempt_id>/submit-partition', views.attempt_submit_partition),
     path('attempts/<int:attempt_id>/ai-grade', views.attempt_ai_grade),
     path('attempts/<int:attempt_id>/grade', views.attempt_grade),
     path('attempts/<int:attempt_id>', views.attempt_detail),
