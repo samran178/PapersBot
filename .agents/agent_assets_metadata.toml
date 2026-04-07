@@ -1,8 +1,0 @@
-uploads = []
-outputs = []
-
-[[generated]]
-id = "iFPHCLpgC43wNazSQQTdO"
-uri = "file://client/public/favicon.png"
-type = "image"
-title = "paperbot favicon icon"
