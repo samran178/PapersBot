@@ -2,13 +2,19 @@ import os
 import json
 from openai import OpenAI
 
-client = OpenAI(
-    api_key=os.environ.get('AI_INTEGRATIONS_OPENAI_API_KEY'),
-    base_url=os.environ.get('AI_INTEGRATIONS_OPENAI_BASE_URL'),
-)
+
+def _get_client():
+    api_key = os.environ.get('AI_INTEGRATIONS_OPENAI_API_KEY')
+    base_url = os.environ.get('AI_INTEGRATIONS_OPENAI_BASE_URL')
+    if not api_key:
+        raise Exception(
+            "AI features are not configured. Please set the AI_INTEGRATIONS_OPENAI_API_KEY environment variable."
+        )
+    return OpenAI(api_key=api_key, base_url=base_url)
 
 
 def generate_exam_questions(text, options):
+    client = _get_client()
     difficulty = options.get('difficulty', 'medium')
     short_questions = options.get('shortQuestions', 5)
     long_questions = options.get('longQuestions', 0)
@@ -68,6 +74,8 @@ Note: For long and short questions (non-MCQ), set type to 'long' or 'short' and 
 def grade_subjective_answer(question_text, guideline, student_answer):
     if not student_answer or not student_answer.strip():
         return {'score': 0, 'feedback': 'No answer was provided by the student.'}
+
+    client = _get_client()
 
     prompt = f"""You are an academic examiner grading a student's answer.
 
